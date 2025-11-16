@@ -1,0 +1,214 @@
+/* src/pages/Tree.css */
+
+.tree-container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-top: 120px;
+  padding-bottom: 100px;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.tree-container h1 {
+  font-size: 2.8rem;
+  text-align: center;
+  color: #000;
+  margin-bottom: 10px;
+}
+
+.tree-container .subtitle {
+  font-size: 1.2rem;
+  color: #ccc;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+/* 레이아웃: 나무(왼쪽) + 칠판(오른쪽) */
+.content-layout {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* 위쪽 정렬 */
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+/* 나무 영역 */
+#tree-wrapper {
+  position: relative;
+  flex-basis: 700px;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+#tree-img {
+  width: 100%;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+/* 사과/숫자 버튼 (Spot) */
+.spot {
+  position: absolute;
+  z-index: 10;
+  width: 60px;
+  height: 60px;
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.spot:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* 완료된 상태 (사과 이미지 표시) */
+.spot.completed {
+  background-color: transparent;
+  box-shadow: none;
+  transform: scale(1);
+  cursor: default;
+}
+.spot.completed span { display: none; } /* 숫자 숨김 */
+.spot.completed img {
+  width: 100px;
+  height: 100px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* 칠판 (스코어보드) */
+.scoreboard {
+  flex-basis: 300px;
+  background-color: #3b5b33;
+  color: white;
+  border: 10px solid #8b4513;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.scoreboard h2 {
+  font-size: 1.8rem;
+  text-align: center;
+  color: #ffffe0;
+  border-bottom: 2px dashed rgba(255, 255, 255, 0.5);
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.score-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+}
+.score-item .value { font-weight: bold; }
+
+/* --- 사과 위치 (1일~31일) --- */
+.spot[data-day="1"] { top: 5%; left: 27%; }
+.spot[data-day="2"] { top: 8%; left: 40%; }
+.spot[data-day="3"] { top: 6%; left: 55%; }
+.spot[data-day="4"] { top: 7%; left: 68%; }
+.spot[data-day="5"] { top: 16%; left: 25%; }
+.spot[data-day="6"] { top: 17%; left: 45%; }
+.spot[data-day="7"] { top: 17%; left: 65%; }
+.spot[data-day="8"] { top: 23%; left: 35%; }
+.spot[data-day="9"] { top: 25%; left: 55%; }
+.spot[data-day="10"] { top: 21%; left: 75%; }
+.spot[data-day="11"] { top: 26%; left: 15%; }
+.spot[data-day="12"] { top: 30%; left: 44%; }
+.spot[data-day="13"] { top: 28%; left: 68%; }
+.spot[data-day="14"] { top: 32%; left: 27%; }
+.spot[data-day="15"] { top: 35%; left: 52%; }
+.spot[data-day="16"] { top: 32%; left: 80%; }
+.spot[data-day="17"] { top: 40%; left: 15%; }
+.spot[data-day="18"] { top: 40%; left: 36%; }
+.spot[data-day="19"] { top: 38%; left: 64%; }
+.spot[data-day="20"] { top: 43%; left: 79%; }
+.spot[data-day="21"] { top: 46%; left: 25%; }
+.spot[data-day="22"] { top: 45%; left: 48%; }
+.spot[data-day="23"] { top: 47%; left: 65%; }
+.spot[data-day="24"] { top: 50%; left: 38%; }
+.spot[data-day="25"] { top: 53%; left: 57%; }
+.spot[data-day="26"] { top: 55%; left: 25%; }
+.spot[data-day="27"] { top: 57%; left: 45%; }
+.spot[data-day="28"] { top: 52%; left: 74%; }
+.spot[data-day="29"] { top: 62%; left: 35%; }
+.spot[data-day="30"] { top: 60%; left: 68%; }
+.spot[data-day="31"] { top: 62%; left: 50%; }
+
+/* 퀴즈 모달 */
+.quiz-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.quiz-modal {
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+
+.quiz-close-btn {
+  position: absolute;
+  top: 10px; right: 15px;
+  background: none; border: none;
+  font-size: 2rem; cursor: pointer;
+}
+
+.quiz-imgs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0;
+}
+.quiz-imgs img {
+  width: 120px; height: 120px;
+  object-fit: contain;
+  border: 1px solid #eee;
+  border-radius: 10px;
+}
+
+.quiz-input {
+  width: 80%;
+  padding: 12px;
+  font-size: 1.2rem;
+  text-align: center;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.quiz-submit-btn {
+  padding: 12px 30px;
+  background: #333;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-size: 1.1rem;
+  cursor: pointer;
+}

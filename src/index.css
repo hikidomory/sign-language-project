@@ -1,0 +1,28 @@
+/* src/index.css */
+@font-face {
+  font-family: "Jalnan";
+  src: url("/fonts/Jalnan2TTF.ttf") format("truetype"); /* 경로 주의: /fonts/... */
+  font-weight: normal;
+  font-style: normal;
+}
+
+* {
+  font-family: "Jalnan", sans-serif;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #ffffff;
+  color: #333;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+ul, li {
+  list-style: none;
+}

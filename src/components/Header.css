@@ -1,0 +1,42 @@
+/* src/components/Header.css */
+.header_nav {
+  display: flex;
+  font-size: 25px;
+  align-items: center;
+  justify-content: space-between;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+  background-color: #ffffff; /* 리액트에서는 일단 흰색 고정 */
+  border-bottom: 1px solid #eee;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 0 20px; /* 좌우 여백 추가 */
+}
+
+.nav_content {
+  display: inline-block;
+  text-align: center;
+  width: 150px; /* 너비 조정 */
+  padding-bottom: 5px;
+  font-size: 1.2rem;
+}
+
+.nav_content a {
+    color: #333;
+}
+
+.nav_content:hover {
+  border-bottom: 3px solid #333;
+}
+
+#main_icon {
+  width: 150px;
+  filter: invert(1); /* 기존 코드 유지 (이미지가 흰색이라면 반전 필요) */
+}
+
+#nav_menu {
+  width: 50px;
+  filter: invert(1);
+}
