@@ -15,7 +15,7 @@ const Header = () => {
         <span className="nav_content"><Link to="/arcade">오락실</Link></span>
         <span className="nav_content"><Link to="/tree">나무 키우기</Link></span>
       </div>
-      <img src="/images/menu3.png" alt="메뉴" id="nav_menu" />
+      <img src="/images/menu3.PNG" alt="메뉴" id="nav_menu" />
     </nav>
   );
 };

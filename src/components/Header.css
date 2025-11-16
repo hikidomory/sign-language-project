@@ -33,8 +33,10 @@
 
 #main_icon {
   width: 150px;
+  filter: invert(1); /* 기존 코드 유지 (이미지가 흰색이라면 반전 필요) */
 }
 
 #nav_menu {
   width: 50px;
+  filter: invert(1);
 }
