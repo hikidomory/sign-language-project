@@ -6,7 +6,7 @@ const Header = () => {
   return (
     <nav className="header_nav">
       <Link to="/">
-        <img src="/public/images/icon4.png" alt="메인 로고" id="main_icon" />
+        <img src="/images/icon4.png" alt="메인 로고" id="main_icon" />
       </Link>
       <div>
         <span className="nav_content"><Link to="/study">수어 배움터</Link></span>
@@ -15,7 +15,7 @@ const Header = () => {
         <span className="nav_content"><Link to="/arcade">오락실</Link></span>
         <span className="nav_content"><Link to="/tree">나무 키우기</Link></span>
       </div>
-      <img src="/public/images/menu3.png" alt="메뉴" id="nav_menu" />
+      <img src="/images/menu3.png" alt="메뉴" id="nav_menu" />
     </nav>
   );
 };
