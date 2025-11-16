@@ -8,7 +8,7 @@ import { consonants, vowels, numbers } from '../data/modelData';
 import { toXY, extractFeatures } from '../utils/handUtils';
 import './Study.css';
 
-const API_URL = "http://127.0.0.1:8000/predict"; // 파이썬 서버 주소
+const API_URL = "https://sign-language-backend-aymn.onrender.com/predict";
 
 const Study = () => {
   // --- 상태 관리 ---

@@ -8,7 +8,7 @@ import './Translator.css';
 const API_URL = "http://127.0.0.1:8000/predict";
 
 const Translator = () => {
-  const [activeTab, setActiveTab] = useState('text2sign'); // 'text2sign' or 'cam2text'
+  const API_URL = "https://sign-language-backend-aymn.onrender.com/predict";
 
   // --- 1. 텍스트 -> 수어 변수 ---
   const [inputText, setInputText] = useState("");
