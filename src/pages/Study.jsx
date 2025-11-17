@@ -2,9 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Hands } from '@mediapipe/hands';
 import { Camera } from '@mediapipe/camera_utils';
 
-// 🟢 modelData에서 데이터 가져오기
+// modelData에서 데이터 가져오기
 import { consonants, vowels, numbers } from '../data/modelData'; 
-
 import { toXY, extractFeatures } from '../utils/handUtils';
 import './Study.css';
 
@@ -16,25 +15,23 @@ const Study = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isCamOn, setIsCamOn] = useState(false);
   const [predictionMsg, setPredictionMsg] = useState("AI 모델 준비 중...");
-  const [isCorrect, setIsCorrect] = useState(null); // null, true, false
+  const [isCorrect, setIsCorrect] = useState(null); // null(대기), true(정답), false(오답)
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const cameraRef = useRef(null);
   const lastPredictionTime = useRef(0);
-  
-  // 🔒 통신 중복 방지 락
   const isPredicting = useRef(false);
 
-  // 🌟 현재 탭에 맞는 데이터 가져오기 (랜덤 섞기 적용)
+  // 🌟 탭 데이터 설정 (studyroom.js의 로직과 유사하게 구성)
   const currentData = useMemo(() => {
     if (activeTab === 'consonants') return consonants;
     if (activeTab === 'vowels') return vowels;
     if (activeTab === 'numbers') return numbers;
     
     if (activeTab === 'all') {
+      // 전체 연습 모드 (랜덤 섞기 포함)
       const allData = [...consonants, ...vowels, ...numbers];
-      // 간단한 셔플 로직
       for (let i = allData.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [allData[i], allData[j]] = [allData[j], allData[i]];
@@ -44,15 +41,15 @@ const Study = () => {
     return [];
   }, [activeTab]);
 
-  // 🎯 현재 화면에 표시된 정답 라벨 계산 (숫자 포맷 처리 등)
+  // 🎯 현재 정답 라벨 (숫자의 경우 "1 (하나)"에서 "1"만 추출)
   const currentTargetLabel = useMemo(() => {
     if (!currentData[currentIndex]) return null;
-    // "1 (하나)" -> "1" 로 분리, 공백 제거
-    return currentData[currentIndex].label.split('(')[0].trim(); 
+    const label = currentData[currentIndex].label;
+    // 괄호가 있다면 앞부분만 사용 (예: "1 (하나)" -> "1")
+    return label.includes('(') ? label.split('(')[0].trim() : label.trim();
   }, [currentData, currentIndex]);
 
-
-  // --- MediaPipe 설정 ---
+  // --- MediaPipe 초기화 및 카메라 설정 ---
   useEffect(() => {
     let hands = null;
     let camera = null;
@@ -74,25 +71,21 @@ const Study = () => {
       if (videoRef.current) {
         camera = new Camera(videoRef.current, {
           onFrame: async () => {
-            // 🔒 안전장치: 카메라/핸즈/비디오요소 확인
-            if (isCamOn && hands && videoRef.current) {
-              try {
-                await hands.send({ image: videoRef.current });
-              } catch (error) {
-                if (!error.message.includes("BindingError")) {
-                   console.warn("MediaPipe send error (ignoring cleanup):", error);
-                }
-              }
+            if (isCamOn && videoRef.current) {
+              await hands.send({ image: videoRef.current });
             }
           },
           width: 640,
           height: 480,
         });
-        
         cameraRef.current = camera;
         camera.start();
         setPredictionMsg("손을 보여주세요 👋");
       }
+    } else {
+      // 카메라가 꺼지면 메시지 초기화
+      setPredictionMsg("AI 모델 준비 중...");
+      setIsCorrect(null);
     }
 
     return () => {
@@ -101,29 +94,32 @@ const Study = () => {
         cameraRef.current = null;
       }
       if (hands) {
-        try { hands.close(); } catch (e) { console.log("Hands close error", e); }
-        hands = null;
+        hands.close();
       }
     };
   }, [isCamOn]);
 
-  // --- MediaPipe 결과 처리 ---
+  // --- MediaPipe 결과 처리 및 예측 요청 ---
   const onResults = (results) => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     
-    // 1. 그리기
+    // 1. 캔버스 그리기 (거울 모드 유지를 위해 CSS transform 활용 권장)
     ctx.save();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
     
-    // 2. 예측 요청
+    // 2. 손 랜드마크가 있으면 예측 시도
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       const landmarks = results.multiHandLandmarks[0];
-      const now = Date.now();
       
-      // 1초 딜레이 & 중복 요청 방지 & 현재 정답 데이터가 있을 때만
+      // 랜드마크 그리기 (선택 사항)
+      // drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#FFFFFF', lineWidth: 5});
+      // drawLandmarks(ctx, landmarks, {color: '#4CAF50', lineWidth: 2});
+
+      const now = Date.now();
+      // 1초 쿨타임 & 예측 중복 방지
       if (now - lastPredictionTime.current > 1000 && !isPredicting.current && currentTargetLabel) {
         lastPredictionTime.current = now;
         
@@ -131,21 +127,19 @@ const Study = () => {
         const features = extractFeatures(coords);
         const modelKey = activeTab === 'numbers' ? 'digit' : 'hangul';
         
-        // 🚨 [핵심 수정] 예측 요청 시점의 '정답(currentTargetLabel)'을 인자로 넘김
         predictSign(features, modelKey, currentTargetLabel);
       }
     }
     ctx.restore();
   };
 
-  // --- 서버 통신 함수 ---
-  // targetLabel을 인자로 받아서 비동기 상태 꼬임 방지
+  // --- 서버 예측 함수 (핵심 수정 적용됨) ---
   const predictSign = async (features, modelKey, expectedLabel) => {
     if (isPredicting.current) return;
 
     try {
       isPredicting.current = true;
-      setPredictionMsg("AI가 분석 중... 🤔");
+      setPredictionMsg("분석 중... 🤔");
 
       const response = await fetch(API_URL, {
         method: "POST",
@@ -156,37 +150,39 @@ const Study = () => {
       if (response.ok) {
         const data = await response.json();
         
-        // 1. 문자열로 변환하고 양옆 공백 제거
-        let predicted = String(data.label).trim();
-        let target = String(expectedLabel).trim();
+        // [핵심 수정 사항] 
+        // normalize("NFKC"): 초성(Jamo)과 호환용 자모(Compatibility Jamo)를 동일하게 맞춰줍니다.
+        const predicted = String(data.label).trim().normalize("NFKC");
+        const target = String(expectedLabel).trim().normalize("NFKC");
 
-        // 2. [핵심] 한글 자모 분리 현상 방지를 위해 유니코드 정규화(NFC) 적용
-        // (이 과정을 거치면 서로 다른 코드로 된 'ㄴ'도 같은 'ㄴ'으로 통일됩니다)
-        predicted = predicted.normalize("NFKC");
-        target = target.normalize("NFKC");
-
-        // 🔍 디버깅: 콘솔에서 진짜 문자 코드가 같은지 확인해보세요
-        console.log(`[비교] AI: ${predicted} (Code: ${predicted.charCodeAt(0)}) vs 정답: ${target} (Code: ${target.charCodeAt(0)})`);
+        console.log(`[판정] AI 예측: ${predicted} / 정답: ${target}`);
 
         if (predicted === target) {
           setPredictionMsg(`정확해요! 🎉 (${predicted})`);
           setIsCorrect(true);
         } else {
-          setPredictionMsg(`틀렸어요... (인식: ${predicted})`);
+          setPredictionMsg(`다시 해보세요 (인식: ${predicted})`);
           setIsCorrect(false);
         }
       } else {
-          setPredictionMsg("서버 응답 오류 ⚠️");
+          setPredictionMsg("서버 오류 ⚠️");
       }
     } catch (error) {
-      console.error("Server Error:", error);
-      setPredictionMsg("서버 연결 실패 ⚠️");
+      console.error(error);
+      setPredictionMsg("연결 실패 ⚠️");
     } finally {
       isPredicting.current = false; 
     }
   };
 
-  // --- 네비게이션 핸들러 ---
+  // --- 버튼 핸들러 ---
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setCurrentIndex(0);
+    setIsCorrect(null);
+    setPredictionMsg("손을 보여주세요 👋");
+  };
+
   const handlePrev = () => {
     setCurrentIndex((prev) => (prev === 0 ? currentData.length - 1 : prev - 1));
     setIsCorrect(null);
@@ -199,13 +195,6 @@ const Study = () => {
     setPredictionMsg("손을 보여주세요 👋");
   };
 
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    setCurrentIndex(0);
-    setIsCorrect(null);
-  };
-
-  // (return 부분은 기존과 동일하지만, currentTargetLabel 사용은 내부 로직용이므로 UI는 기존 유지)
   return (
     <div className="study-container">
       <h1 className="title">수어 배움터</h1>
@@ -233,30 +222,37 @@ const Study = () => {
         {isCamOn ? '카메라 끄기 ⏹️' : 'AI 카메라 시작 📸'}
       </button>
 
-      {/* 학습 컨텐츠 영역 */}
+      {/* 메인 컨텐츠 영역 */}
       <div className="study-content-wrapper">
         <button className="nav-btn prev" onClick={handlePrev}>◀</button>
         
         <div className="display-area">
-          {/* 왼쪽: 정답 이미지 */}
+          {/* 정답 이미지 카드 */}
           <div className="study-card">
              <div className="card-img-wrapper">
                 {currentData[currentIndex] && (
-                  <img src={currentData[currentIndex].img} alt="수어" />
+                  <img src={currentData[currentIndex].img} alt="수어 예시" />
                 )}
              </div>
              <div className="card-text">
-                {currentData[currentIndex] ? currentData[currentIndex].label : "데이터 없음"}
+                {/* 원본 라벨 그대로 표시 (예: 1 (하나)) */}
+                {currentData[currentIndex] ? currentData[currentIndex].label : ""}
              </div>
           </div>
 
-          {/* 오른쪽: 내 웹캠 화면 */}
+          {/* 웹캠 카드 */}
           <div className="study-card webcam-card">
             <div className="card-img-wrapper">
-               {!isCamOn && <div className="placeholder">카메라를 켜주세요</div>}
+               {!isCamOn && <div className="placeholder">버튼을 눌러 시작하세요</div>}
                <video ref={videoRef} className="input_video" style={{display: 'none'}}></video>
-               <canvas ref={canvasRef} className={`output_canvas ${isCamOn ? '' : 'hidden'}`} width={640} height={480}></canvas>
+               <canvas 
+                 ref={canvasRef} 
+                 className={`output_canvas ${isCamOn ? '' : 'hidden'}`} 
+                 width={640} 
+                 height={480}
+               ></canvas>
             </div>
+            {/* 결과 메시지: 정답이면 초록, 오답이면 빨강 */}
             <div className={`card-text result ${isCorrect === true ? 'success' : isCorrect === false ? 'fail' : ''}`}>
                {predictionMsg}
             </div>
