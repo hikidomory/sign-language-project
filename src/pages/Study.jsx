@@ -23,7 +23,7 @@ const Study = () => {
   const cameraRef = useRef(null);
   const lastPredictionTime = useRef(0);
   
-  // 🔒 [추가] 현재 서버와 통신 중인지 확인하는 "잠금 장치"
+  // 🔒 통신 중복 방지 락
   const isPredicting = useRef(false);
 
   // 🌟 현재 탭에 맞는 데이터 가져오기 (랜덤 섞기 적용)
@@ -34,6 +34,7 @@ const Study = () => {
     
     if (activeTab === 'all') {
       const allData = [...consonants, ...vowels, ...numbers];
+      // 간단한 셔플 로직
       for (let i = allData.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [allData[i], allData[j]] = [allData[j], allData[i]];
@@ -43,7 +44,15 @@ const Study = () => {
     return [];
   }, [activeTab]);
 
-// --- MediaPipe 설정 (수정된 버전) ---
+  // 🎯 현재 화면에 표시된 정답 라벨 계산 (숫자 포맷 처리 등)
+  const currentTargetLabel = useMemo(() => {
+    if (!currentData[currentIndex]) return null;
+    // "1 (하나)" -> "1" 로 분리, 공백 제거
+    return currentData[currentIndex].label.split('(')[0].trim(); 
+  }, [currentData, currentIndex]);
+
+
+  // --- MediaPipe 설정 ---
   useEffect(() => {
     let hands = null;
     let camera = null;
@@ -65,14 +74,14 @@ const Study = () => {
       if (videoRef.current) {
         camera = new Camera(videoRef.current, {
           onFrame: async () => {
-            // 🔒 [핵심 수정] 카메라가 켜져 있고, hands 인스턴스가 존재할 때만 전송
-            // videoRef.current가 존재하는지도 확인해야 안전함
+            // 🔒 안전장치: 카메라/핸즈/비디오요소 확인
             if (isCamOn && hands && videoRef.current) {
               try {
                 await hands.send({ image: videoRef.current });
               } catch (error) {
-                // 종료 시점에 발생하는 BindingError는 무시 (앱 충돌 방지)
-                console.warn("MediaPipe send error (ignoring during cleanup):", error);
+                if (!error.message.includes("BindingError")) {
+                   console.warn("MediaPipe send error (ignoring cleanup):", error);
+                }
               }
             }
           },
@@ -86,65 +95,56 @@ const Study = () => {
       }
     }
 
-    // Cleanup 함수 (뒷정리)
     return () => {
-      // 1. 카메라 먼저 멈춤
       if (cameraRef.current) {
         cameraRef.current.stop();
         cameraRef.current = null;
       }
-      
-      // 2. Hands 종료
       if (hands) {
-        // hands.close()는 비동기 충돌 가능성이 있으므로 try-catch로 감쌈
-        try {
-            hands.close();
-        } catch (e) {
-            console.log("Hands close error", e);
-        }
-        hands = null; // 변수 초기화로 onFrame 내부 접근 차단
+        try { hands.close(); } catch (e) { console.log("Hands close error", e); }
+        hands = null;
       }
     };
-  }, [isCamOn]); // 의존성 배열 유지
+  }, [isCamOn]);
 
-  // --- MediaPipe 결과 처리 및 AI 예측 ---
+  // --- MediaPipe 결과 처리 ---
   const onResults = (results) => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     
-    // 1. 캔버스 그리기
+    // 1. 그리기
     ctx.save();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
     
-    // 2. 손 감지 및 예측
+    // 2. 예측 요청
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       const landmarks = results.multiHandLandmarks[0];
-      
       const now = Date.now();
       
-      // 🚨 [수정] 요청 간격을 1000ms(1초)로 늘리고, 통신 중(isPredicting)일 땐 요청 막음
-      if (now - lastPredictionTime.current > 1000 && !isPredicting.current) {
+      // 1초 딜레이 & 중복 요청 방지 & 현재 정답 데이터가 있을 때만
+      if (now - lastPredictionTime.current > 1000 && !isPredicting.current && currentTargetLabel) {
         lastPredictionTime.current = now;
         
         const coords = toXY(landmarks);
         const features = extractFeatures(coords);
         const modelKey = activeTab === 'numbers' ? 'digit' : 'hangul';
         
-        predictSign(features, modelKey);
+        // 🚨 [핵심 수정] 예측 요청 시점의 '정답(currentTargetLabel)'을 인자로 넘김
+        predictSign(features, modelKey, currentTargetLabel);
       }
     }
     ctx.restore();
   };
 
   // --- 서버 통신 함수 ---
-  const predictSign = async (features, modelKey) => {
-    // 🔒 이미 통신 중이면 강제 종료 (이중 안전장치)
+  // targetLabel을 인자로 받아서 비동기 상태 꼬임 방지
+  const predictSign = async (features, modelKey, expectedLabel) => {
     if (isPredicting.current) return;
 
     try {
-      isPredicting.current = true; // 🚩 깃발 들기 (통신 시작)
+      isPredicting.current = true;
       setPredictionMsg("AI가 분석 중... 🤔");
 
       const response = await fetch(API_URL, {
@@ -155,29 +155,27 @@ const Study = () => {
 
       if (response.ok) {
         const data = await response.json();
-        const predictedLabel = data.label;
         
-        // 현재 정답 데이터가 있는지 확인
-        if (!currentData[currentIndex]) return;
+        // 🔍 디버깅용 로그 (개발자 도구 콘솔 확인용)
+        console.log(`[Prediction] AI: ${data.label} / 정답: ${expectedLabel}`);
 
-        const targetLabel = currentData[currentIndex].label.split(' ')[0];
+        const predicted = String(data.label).trim(); // 문자열 변환 및 공백 제거
+        const target = String(expectedLabel).trim();
 
-        if (predictedLabel === targetLabel) {
-          setPredictionMsg("정확해요! 🎉");
+        if (predicted === target) {
+          setPredictionMsg(`정확해요! 🎉 (${predicted})`);
           setIsCorrect(true);
         } else {
-          setPredictionMsg(`틀렸어요... (인식: ${predictedLabel})`);
+          setPredictionMsg(`틀렸어요... (인식: ${predicted})`);
           setIsCorrect(false);
         }
       } else {
-          // 404, 500 에러 등 처리
           setPredictionMsg("서버 응답 오류 ⚠️");
       }
     } catch (error) {
       console.error("Server Error:", error);
       setPredictionMsg("서버 연결 실패 ⚠️");
     } finally {
-      // ✅ 성공하든 실패하든 무조건 깃발 내리기 (다음 요청 허용)
       isPredicting.current = false; 
     }
   };
@@ -201,6 +199,7 @@ const Study = () => {
     setIsCorrect(null);
   };
 
+  // (return 부분은 기존과 동일하지만, currentTargetLabel 사용은 내부 로직용이므로 UI는 기존 유지)
   return (
     <div className="study-container">
       <h1 className="title">수어 배움터</h1>
