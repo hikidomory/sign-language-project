@@ -43,9 +43,10 @@ const Study = () => {
     return [];
   }, [activeTab]);
 
-  // --- MediaPipe 설정 ---
+// --- MediaPipe 설정 (수정된 버전) ---
   useEffect(() => {
     let hands = null;
+    let camera = null;
 
     if (isCamOn) {
       hands = new Hands({
@@ -62,28 +63,49 @@ const Study = () => {
       hands.onResults(onResults);
 
       if (videoRef.current) {
-        cameraRef.current = new Camera(videoRef.current, {
+        camera = new Camera(videoRef.current, {
           onFrame: async () => {
-            if (videoRef.current) await hands.send({ image: videoRef.current });
+            // 🔒 [핵심 수정] 카메라가 켜져 있고, hands 인스턴스가 존재할 때만 전송
+            // videoRef.current가 존재하는지도 확인해야 안전함
+            if (isCamOn && hands && videoRef.current) {
+              try {
+                await hands.send({ image: videoRef.current });
+              } catch (error) {
+                // 종료 시점에 발생하는 BindingError는 무시 (앱 충돌 방지)
+                console.warn("MediaPipe send error (ignoring during cleanup):", error);
+              }
+            }
           },
           width: 640,
           height: 480,
         });
-        cameraRef.current.start();
+        
+        cameraRef.current = camera;
+        camera.start();
         setPredictionMsg("손을 보여주세요 👋");
       }
     }
 
-    // Cleanup
+    // Cleanup 함수 (뒷정리)
     return () => {
+      // 1. 카메라 먼저 멈춤
       if (cameraRef.current) {
         cameraRef.current.stop();
+        cameraRef.current = null;
       }
+      
+      // 2. Hands 종료
       if (hands) {
-        hands.close();
+        // hands.close()는 비동기 충돌 가능성이 있으므로 try-catch로 감쌈
+        try {
+            hands.close();
+        } catch (e) {
+            console.log("Hands close error", e);
+        }
+        hands = null; // 변수 초기화로 onFrame 내부 접근 차단
       }
     };
-  }, [isCamOn]);
+  }, [isCamOn]); // 의존성 배열 유지
 
   // --- MediaPipe 결과 처리 및 AI 예측 ---
   const onResults = (results) => {
