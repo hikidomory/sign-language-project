@@ -156,11 +156,17 @@ const Study = () => {
       if (response.ok) {
         const data = await response.json();
         
-        // 🔍 디버깅용 로그 (개발자 도구 콘솔 확인용)
-        console.log(`[Prediction] AI: ${data.label} / 정답: ${expectedLabel}`);
+        // 1. 문자열로 변환하고 양옆 공백 제거
+        let predicted = String(data.label).trim();
+        let target = String(expectedLabel).trim();
 
-        const predicted = String(data.label).trim(); // 문자열 변환 및 공백 제거
-        const target = String(expectedLabel).trim();
+        // 2. [핵심] 한글 자모 분리 현상 방지를 위해 유니코드 정규화(NFC) 적용
+        // (이 과정을 거치면 서로 다른 코드로 된 'ㄴ'도 같은 'ㄴ'으로 통일됩니다)
+        predicted = predicted.normalize("NFC");
+        target = target.normalize("NFC");
+
+        // 🔍 디버깅: 콘솔에서 진짜 문자 코드가 같은지 확인해보세요
+        console.log(`[비교] AI: ${predicted} (Code: ${predicted.charCodeAt(0)}) vs 정답: ${target} (Code: ${target.charCodeAt(0)})`);
 
         if (predicted === target) {
           setPredictionMsg(`정확해요! 🎉 (${predicted})`);
