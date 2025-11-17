@@ -7,7 +7,7 @@ import './Translator.css';
 
 // 배포 환경에 따라 API 주소 자동 설정
 const isProduction = import.meta.env.MODE === 'production';
-const API_URL = "https://itzel-unaching-unexceptionally.ngrok-free.dev";
+const API_URL = "https://itzel-unaching-unexceptionally.ngrok-free.dev/predict";
 
 const Translator = () => {
   const [activeTab, setActiveTab] = useState('text2sign'); // 'text2sign' or 'cam2text'
