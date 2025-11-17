@@ -7,17 +7,20 @@ const RainGame = () => {
   // --- 상태 변수 ---
   const [items, setItems] = useState([]); 
   const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(3); // 화면 표시용 State
+  const [lives, setLives] = useState(3); 
   const [isPlaying, setIsPlaying] = useState(false);
   const [userInput, setUserInput] = useState("");
   const [gameOver, setGameOver] = useState(false);
 
-  // --- Refs (게임 루프용 실시간 값) ---
+  // --- Refs ---
   const gameLoopRef = useRef(null);
   const spawnLoopRef = useRef(null);
   const itemsRef = useRef([]); 
   const scoreRef = useRef(0);
-  const livesRef = useRef(3); // 🌟 핵심: 실시간 목숨 추적용 Ref 추가
+  const livesRef = useRef(3); 
+  
+  // 🌟 [추가] 중복 방지를 위한 최근 나온 단어 저장소 (최대 5개 기억)
+  const recentItemsRef = useRef([]); 
 
   // --- 게임 시작 ---
   const startGame = () => {
@@ -27,38 +30,75 @@ const RainGame = () => {
     scoreRef.current = 0;
     
     setLives(3);
-    livesRef.current = 3; // Ref도 초기화
+    livesRef.current = 3;
+    
+    recentItemsRef.current = []; // 중복 기록 초기화
     
     setGameOver(false);
     setIsPlaying(true);
     setUserInput("");
   };
 
-  // --- 아이템 생성 (Spawn) ---
+  // --- 🌟 [수정됨] 아이템 생성 (Spawn) ---
   const spawnItem = () => {
     const keys = Object.keys(quizData);
-    
-    let candidates = [];
-    if (scoreRef.current < 50) {
-      candidates = keys.filter(k => quizData[k].answer.length === 1);
+    const currentScore = scoreRef.current;
+
+    // 1. 점수대별 난이도 설정 (필터링 조건)
+    let minLen = 1;
+    let maxLen = 10; // 제한 없음
+
+    if (currentScore < 30) {
+      // 초반: 1글자 짜리만 (이미지 1개)
+      minLen = 1; 
+      maxLen = 1;
+    } else if (currentScore < 80) {
+      // 중반: 1글자 ~ 2글자 (간단한 단어 섞임)
+      minLen = 1; 
+      maxLen = 2;
     } else {
-      candidates = keys.filter(k => quizData[k].answer.length >= 2);
+      // 후반: 2글자 이상 (어려운 단어 위주)
+      minLen = 2;
+      maxLen = 10;
     }
+
+    // 2. 조건에 맞는 후보군 추출
+    let candidates = keys.filter(k => {
+      const len = quizData[k].answer.length;
+      return len >= minLen && len <= maxLen;
+    });
+
+    // (예외처리) 만약 조건에 맞는게 하나도 없으면 전체에서 뽑음
     if (candidates.length === 0) candidates = keys;
 
-    const randomKey = candidates[Math.floor(Math.random() * candidates.length)];
+    // 3. 🌟 중복 방지 로직
+    // 최근에 나왔던 단어들을 후보군에서 제외
+    const nonDuplicateCandidates = candidates.filter(k => 
+      !recentItemsRef.current.includes(quizData[k].answer)
+    );
+
+    // 제외했더니 남은게 있으면 거기서 뽑고, 없으면(다 최근에 나온거면) 그냥 뽑음
+    const finalCandidates = nonDuplicateCandidates.length > 0 ? nonDuplicateCandidates : candidates;
+
+    const randomKey = finalCandidates[Math.floor(Math.random() * finalCandidates.length)];
     const quiz = quizData[randomKey];
+    
+    // 4. 최근 목록 업데이트 (Queue 방식)
+    recentItemsRef.current.push(quiz.answer);
+    if (recentItemsRef.current.length > 5) { // 최근 5개까지만 기억
+      recentItemsRef.current.shift();
+    }
+
     const randomX = Math.floor(Math.random() * 80) + 5;
 
     const newItem = {
-      id: Date.now(), // 고유 ID
+      id: Date.now(), 
       x: randomX,
       y: -10,
       answer: quiz.answer,
       image: Array.isArray(quiz.image) ? quiz.image : [quiz.image]
     };
 
-    // 상태와 Ref 동시 업데이트
     setItems(prev => {
       const newItems = [...prev, newItem];
       itemsRef.current = newItems;
@@ -66,43 +106,41 @@ const RainGame = () => {
     });
   };
 
-  // --- 게임 루프 (핵심 수정) ---
+  // --- 게임 루프 ---
   useEffect(() => {
     if (isPlaying) {
+      // 🌟 난이도가 올라갈수록 생성 속도도 조금씩 빨라지게 할 수 있음 (선택사항)
+      // 현재는 고정 3초
       spawnLoopRef.current = setInterval(spawnItem, 3000);
 
       gameLoopRef.current = setInterval(() => {
-        // Ref를 기준으로 연산 (상태 의존성 제거)
         const currentItems = itemsRef.current;
         const survivingItems = [];
-        let lifeLostCount = 0; // 이번 프레임에서 잃은 목숨 수
+        let lifeLostCount = 0; 
+
+        // 🌟 낙하 속도 공식 (점수가 높을수록 빨라짐)
+        const dropSpeed = 1 + Math.floor(scoreRef.current / 50) * 0.2;
 
         const updatedItems = currentItems.map(item => ({
           ...item,
-          y: item.y + (1 + Math.floor(scoreRef.current / 50) * 0.2)
+          y: item.y + dropSpeed
         }));
 
         updatedItems.forEach(item => {
-          if (item.y > 95) { // 바닥(95%)에 닿음
-            lifeLostCount++; // 카운트 증가
-            // survivingItems에 넣지 않음 -> 삭제됨
+          if (item.y > 95) { 
+            lifeLostCount++; 
           } else {
             survivingItems.push(item);
           }
         });
 
-        // 아이템 목록 업데이트 (Ref & State)
         itemsRef.current = survivingItems;
         setItems(survivingItems);
 
-        // 🌟 목숨 차감 로직 (Ref 사용으로 중복 차감 방지)
         if (lifeLostCount > 0) {
           livesRef.current -= lifeLostCount; 
-          
-          // 화면용 State 업데이트 (음수 방지)
           setLives(Math.max(0, livesRef.current));
 
-          // 게임 오버 체크
           if (livesRef.current <= 0) {
             clearInterval(spawnLoopRef.current);
             clearInterval(gameLoopRef.current);
@@ -120,22 +158,21 @@ const RainGame = () => {
     };
   }, [isPlaying]);
 
-  // --- 정답 체크 ---
+  // --- 정답 체크 (기존과 동일) ---
   const handleInput = (e) => {
     if (e.key === 'Enter') {
       const value = userInput.trim();
       if (!value) return;
 
-      // 현재 화면에 있는 아이템 중에서 찾기 (itemsRef 사용)
       const currentItems = itemsRef.current;
+      // 가장 아래에 있는(화면 y값이 큰) 아이템부터 우선순위로 제거하면 더 좋음
+      // 여기서는 findIndex로 단순 검색
       const hitIndex = currentItems.findIndex(item => item.answer === value);
 
       if (hitIndex !== -1) {
-        // 정답!
         const newItems = [...currentItems];
         newItems.splice(hitIndex, 1);
         
-        // 즉시 반영
         itemsRef.current = newItems;
         setItems(newItems);
         
@@ -154,7 +191,6 @@ const RainGame = () => {
     <div className="rain-game-container">
       <div className="game-header">
         <div className="score-board">점수 : {score}</div>
-        {/* 🌟 수정: 음수가 들어가는 것을 방지하기 위해 Math.max 사용 */}
         <div className="life-board">{'❤'.repeat(Math.max(0, lives))}</div>
       </div>
 
@@ -162,6 +198,7 @@ const RainGame = () => {
         {!isPlaying && !gameOver && (
           <div className="start-msg">
              <h2>수어 산성비</h2>
+             <p>단어를 입력하여 산성비를 막아주세요!</p>
              <button onClick={startGame}>게임 시작</button>
           </div>
         )}
@@ -172,7 +209,10 @@ const RainGame = () => {
             className="drop-item" 
             style={{ left: `${item.x}%`, top: `${item.y}%` }}
           >
-            {item.image.map((src, i) => <img key={i} src={src} alt="수어" />)}
+            {/* 이미지가 여러개일 경우 옆으로 나열되도록 스타일링 필요 */}
+            <div className="images-row"> 
+              {item.image.map((src, i) => <img key={i} src={src} alt="수어" />)}
+            </div>
           </div>
         ))}
       </div>
@@ -183,7 +223,7 @@ const RainGame = () => {
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
           onKeyDown={handleInput}
-          placeholder={isPlaying ? "정답을 입력하고 엔터!" : "게임 시작을 눌러주세요"}
+          placeholder={isPlaying ? "정답 입력" : "게임 시작을 눌러주세요"}
           disabled={!isPlaying}
           autoFocus
         />
