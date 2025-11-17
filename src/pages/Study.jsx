@@ -113,7 +113,7 @@ const Study = () => {
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       const landmarks = results.multiHandLandmarks[0];
       
-      // 정답을 맞췄다면 API 호출 중단 (화면 갱신은 계속)
+      // 정답을 맞췄다면 API 호출 중단
       if (isCorrect) {
         ctx.restore();
         return; 
@@ -126,8 +126,13 @@ const Study = () => {
         
         const coords = toXY(landmarks);
         const features = extractFeatures(coords);
-        const modelKey = activeTab === 'numbers' ? 'digit' : 'hangul';
         
+        // 🔥 [수정됨] 탭(activeTab)이 아니라, '정답 라벨(글자)'이 숫자인지 확인하여 모델 결정
+        // 정규식 설명: 문자열의 처음(^)부터 끝($)까지 숫자([0-9])로만 되어있는지 확인
+        const isDigit = /^[0-9]+$/.test(targetLabelRef.current);
+        const modelKey = isDigit ? 'digit' : 'hangul';
+        
+        // predictSign 함수 호출
         predictSign(features, modelKey, targetLabelRef.current);
       }
     }
