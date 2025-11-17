@@ -20,6 +20,9 @@ const Translator = () => {
   const [sentence, setSentence] = useState(""); 
   const [syllable, setSyllable] = useState({ cho: null, jung: null, jong: null }); 
   const [predLabel, setPredLabel] = useState("준비됨");
+  
+  // 🚀 [추가] 입력 진행률 시각화용 상태
+  const [progress, setProgress] = useState(0); 
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -36,46 +39,30 @@ const Translator = () => {
     setSignTokens(tokens);
   };
 
-  // [핵심 추가] 토큰을 음절(원본 글자) 단위로 묶어주는 함수
+  // 토큰 음절 그룹화 함수 (이전과 동일)
   const groupedTokens = useMemo(() => {
     const groups = [];
     let currentGroup = null;
-
     signTokens.forEach((token) => {
-      // 공백 처리
       if (token.key === 'space') {
-        // 공백은 별도 그룹으로 넣거나, 현재 그룹을 끊어주는 역할
         groups.push({ type: 'space' });
         currentGroup = null;
         return;
       }
-
-      // 새로운 글자(raw)가 시작되면 그룹 생성
       if (!currentGroup || currentGroup.raw !== token.raw) {
-        currentGroup = { 
-          type: 'char', 
-          raw: token.raw, 
-          tokens: [] 
-        };
+        currentGroup = { type: 'char', raw: token.raw, tokens: [] };
         groups.push(currentGroup);
       }
-      
-      // 현재 그룹에 자모 토큰 추가
       currentGroup.tokens.push(token);
     });
-
     return groups;
   }, [signTokens]);
 
-  // [핵심 추가] 이미지 경로 결정 함수 (숫자/문자 구분)
   const getImagePath = (key) => {
     const isNumeric = /^[0-9]+$/;
-    if (isNumeric.test(key)) {
-      return `/images/fingernumber/${key}.jpg`;
-    }
+    if (isNumeric.test(key)) return `/images/fingernumber/${key}.jpg`;
     return `/images/fingerspell/${key}.jpg`;
   };
-
 
   // --- 탭 2 로직: MediaPipe & AI ---
   useEffect(() => {
@@ -124,17 +111,26 @@ const Translator = () => {
     
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       const now = Date.now();
-      if (now - lastPredTime.current > 300) {
+      // 300ms 쿨타임 (너무 자주 요청하지 않도록)
+      if (now - lastPredTime.current > 200) { // 반응속도를 위해 300 -> 200 단축
         lastPredTime.current = now;
         const features = extractFeatures(toXY(results.multiHandLandmarks[0]));
         predictAndProcess(features);
       }
+    } else {
+      // 🛠️ [핵심 수정 1] 손이 화면에서 사라지면 상태 완전 초기화
+      // 이렇게 해야 손을 뺐다 다시 넣었을 때 같은 글자도 입력 가능해집니다.
+      potentialLabel.current = null;
+      potentialCount.current = 0;
+      holdStartTime.current = 0;
+      lastAddedLabel.current = null; 
+      setPredLabel("손을 보여주세요");
+      setProgress(0);
     }
     ctx.restore();
   };
 
   const predictAndProcess = async (features) => {
-    // ... (기존 AI 로직 유지) ...
     try {
       const res = await fetch(API_URL, {
         method: "POST",
@@ -144,34 +140,56 @@ const Translator = () => {
 
       if (!res.ok) return;
       const data = await res.json();
-      const label = data.label;
+      const label = data.label; // AI가 인식한 라벨
+      
+      // 화면 표시용 업데이트
       setPredLabel(label);
 
+      // --- 디바운싱 & 홀드 로직 개선 ---
+      
       if (label === potentialLabel.current) {
+        // 같은 라벨이 연속해서 들어옴
         potentialCount.current++;
+        
+        if (holdStartTime.current === 0) {
+            holdStartTime.current = Date.now();
+        }
+        
+        // 경과 시간 계산
+        const elapsed = Date.now() - holdStartTime.current;
+        const TARGET_TIME = 600; // 🛠️ [핵심 수정 2] 입력 대기 시간 단축 (1000ms -> 600ms)
+
+        // 진행률 업데이트 (0 ~ 100%)
+        const pct = Math.min(100, (elapsed / TARGET_TIME) * 100);
+        setProgress(pct);
+
+        // 입력 확정 조건 달성
+        if (elapsed > TARGET_TIME) {
+           // 이전에 입력한 것과 다른 글자이거나, 손을 뗐다 다시한 경우 입력 허용
+           if (label !== lastAddedLabel.current) {
+             processInput(label);
+             lastAddedLabel.current = label;
+             
+             // 입력 후 피드백 (진동 등 가능하면 추가)
+             console.log("입력 확정:", label);
+             setProgress(0); 
+             holdStartTime.current = 0; // 타이머 리셋
+           }
+        }
+
       } else {
+        // 라벨이 바뀌거나 튀었을 때
         potentialLabel.current = label;
         potentialCount.current = 1;
-        holdStartTime.current = 0;
-      }
-
-      if (potentialCount.current >= 3) {
-        if (holdStartTime.current === 0) holdStartTime.current = Date.now();
-        
-        const holdDuration = Date.now() - holdStartTime.current;
-        if (holdDuration > 1000 && label !== lastAddedLabel.current) {
-          processInput(label);
-          lastAddedLabel.current = label;
-        }
-      } else {
-        if (potentialLabel.current !== label) holdStartTime.current = 0;
+        holdStartTime.current = 0; // 타이머 리셋
+        setProgress(0);
       }
 
     } catch (err) { console.error(err); }
   };
 
   const processInput = (label) => {
-    // ... (기존 processInput 로직 유지) ...
+    // ... 기존 로직 동일 ...
     if (label === 'conversion_model_1') {
       setCurrentModel(prev => {
         const next = prev === 'hangul' ? 'digit' : 'hangul';
@@ -224,11 +242,11 @@ const Translator = () => {
     setSyllable({ cho: null, jung: null, jong: null });
     potentialLabel.current = null;
     lastAddedLabel.current = null;
+    setProgress(0);
   };
 
   const composingChar = HE.composeHangul(syllable.cho, syllable.jung, syllable.jong) 
     || (syllable.cho || "") + (syllable.jung || "") + (syllable.jong || "");
-
 
   return (
     <div className="translator-container">
@@ -243,7 +261,7 @@ const Translator = () => {
         </button>
       </div>
 
-      {/* --- 탭 1: 텍스트 -> 수어 (수정됨) --- */}
+      {/* Text -> Sign Tab */}
       {activeTab === 'text2sign' && (
         <div className="panel text2sign">
           <div className="input-box">
@@ -255,23 +273,12 @@ const Translator = () => {
             <button onClick={handleTextRender}>번역하기</button>
           </div>
 
-          {/* 여기서 groupedTokens를 순회하며 
-             이전 방식(eomjeol_group)처럼 렌더링합니다. 
-          */}
           <div className="output-box">
             {groupedTokens.map((group, groupIdx) => {
-              // 공백 처리
-              if (group.type === 'space') {
-                return <div key={groupIdx} className="sign-space"></div>;
-              }
-
-              // 글자(음절) 처리
+              if (group.type === 'space') return <div key={groupIdx} className="sign-space"></div>;
               return (
                 <div key={groupIdx} className="eomjeol_group">
-                  {/* 왼쪽: 한글 원본 (예: 안) */}
                   <div className="eomjeol_label">{group.raw}</div>
-                  
-                  {/* 오른쪽: 분해된 수어 이미지들 (예: ㅇ, ㅏ, ㄴ) */}
                   <div className="eomjeol_signs">
                     {group.tokens.map((token, tokenIdx) => (
                       <div key={tokenIdx} className="sign-card">
@@ -293,13 +300,26 @@ const Translator = () => {
         </div>
       )}
 
-      {/* --- 탭 2: 웹캠 -> 텍스트 (기존 유지) --- */}
+      {/* Cam -> Text Tab */}
       {activeTab === 'cam2text' && (
         <div className="panel cam2text">
           <div className="cam-wrapper">
              {!isCamOn && <div className="cam-placeholder">카메라가 꺼져있습니다</div>}
              <video ref={videoRef} style={{display:'none'}} autoPlay playsInline></video>
              <canvas ref={canvasRef} width={640} height={480} className={isCamOn?'':'hidden'}></canvas>
+             
+             {/* 🚀 [추가] 입력 진행률 표시 바 */}
+             {isCamOn && progress > 0 && (
+               <div style={{
+                 position: 'absolute',
+                 bottom: 0,
+                 left: 0,
+                 height: '10px',
+                 backgroundColor: '#4caf50',
+                 width: `${progress}%`,
+                 transition: 'width 0.1s linear'
+               }}></div>
+             )}
           </div>
           
           <div className="control-panel">
@@ -307,7 +327,9 @@ const Translator = () => {
                {isCamOn ? "카메라 끄기" : "카메라 켜기"}
              </button>
              <div className="mode-badge">현재 모드: {currentModel === 'hangul' ? '한글' : '숫자'}</div>
-             <div className="status-text">인식된 동작: <span>{predLabel}</span></div>
+             <div className="status-text">
+                인식된 동작: <span>{predLabel}</span>
+             </div>
           </div>
 
           <div className="sentence-box">
