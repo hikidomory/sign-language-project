@@ -1,4 +1,5 @@
 /* src/pages/Translator.css */
+
 .translator-container {
   width: 90%;
   max-width: 1000px;
@@ -11,6 +12,7 @@
   text-align: center;
   font-size: 2.5rem;
   margin-bottom: 30px;
+  font-family: "Jalnan", sans-serif; /* 제목 폰트 적용 */
 }
 
 .tabs {
@@ -28,18 +30,22 @@
   cursor: pointer;
   font-size: 1.1rem;
   font-family: "Jalnan", sans-serif;
+  transition: all 0.2s;
 }
+
 .tab.active {
   background: #333;
   color: white;
+  border-color: #333;
 }
 
-/* --- Text2Sign 스타일 --- */
+/* --- Text2Sign 스타일 (수정됨) --- */
 .input-box {
   display: flex;
   gap: 10px;
   margin-bottom: 20px;
 }
+
 .input-box textarea {
   flex: 1;
   padding: 15px;
@@ -48,7 +54,9 @@
   font-size: 1.2rem;
   resize: none;
   height: 60px;
+  font-family: sans-serif;
 }
+
 .input-box button {
   padding: 0 25px;
   border-radius: 10px;
@@ -56,21 +64,69 @@
   color: white;
   border: none;
   cursor: pointer;
+  font-family: "Jalnan", sans-serif;
+  font-size: 1rem;
+  transition: background 0.2s;
 }
 
+.input-box button:hover {
+  background: #555;
+}
+
+/* 출력 박스: 이제 내부 요소들이 세로(column)로 쌓입니다 */
 .output-box {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  flex-direction: column; /* 수정됨: 세로 정렬 */
+  gap: 0; /* 그룹 간 간격은 eomjeol_group의 margin으로 처리 */
   background: #fafafa;
   padding: 20px;
   border-radius: 10px;
   border: 1px solid #eee;
   min-height: 200px;
 }
+
+/* [새로 추가됨] 음절 그룹 (한 줄 컨테이너) */
+.eomjeol_group {
+  display: flex;
+  align-items: center;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #e0e0e0; /* 줄 구분선 */
+  width: 100%;
+}
+
+/* 마지막 줄은 선 없애기 */
+.eomjeol_group:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* [새로 추가됨] 왼쪽 큰 글자 (예: 안) */
+.eomjeol_label {
+  font-family: "Jalnan", sans-serif;
+  font-size: 2.5rem;
+  color: #333;
+  width: 80px; /* 고정 너비 */
+  text-align: center;
+  border-right: 3px solid #ddd; /* 오른쪽 구분선 */
+  padding-right: 15px;
+  margin-right: 20px;
+  flex-shrink: 0; /* 글자 영역이 찌그러지지 않게 고정 */
+}
+
+/* [새로 추가됨] 오른쪽 지문자 이미지 나열 영역 */
+.eomjeol_signs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+/* 카드 스타일 (기존 유지 및 미세 조정) */
 .sign-card {
-  width: 100px;
-  height: 120px;
+  width: 90px;  /* 크기 약간 조정 */
+  height: 110px;
   background: white;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -78,15 +134,28 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
+
 .sign-card img {
-  width: 80px;
-  height: 80px;
+  width: 70px;
+  height: 70px;
   object-fit: contain;
 }
-.space { width: 30px; }
 
-/* --- Cam2Text 스타일 --- */
+.sign-card span {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 5px;
+}
+
+/* 띄어쓰기 공간 */
+.sign-space {
+  width: 100%;
+  height: 30px; /* 빈 줄의 높이 */
+}
+
+/* --- Cam2Text 스타일 (기존 유지) --- */
 .cam-wrapper {
   width: 100%;
   max-width: 640px;
@@ -96,65 +165,135 @@
   border-radius: 15px;
   overflow: hidden;
   position: relative;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
+
 .cam-placeholder {
   color: white;
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100%;
+  font-size: 1.2rem;
+  color: #aaa;
 }
+
 .cam-wrapper canvas {
   width: 100%;
   height: 100%;
+  object-fit: cover; /* 꽉 차게 */
+  transform: scaleX(-1); /* 거울 모드 */
 }
-.hidden { display: none; }
+
+.hidden {
+  display: none;
+}
 
 .control-panel {
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: #f0f0f0;
-  padding: 15px;
+  padding: 15px 25px;
   border-radius: 10px;
   margin-bottom: 20px;
 }
+
 .cam-btn {
   padding: 10px 20px;
-  background: #4caf50;
+  background: #333;
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
+  font-family: "Jalnan", sans-serif;
+  transition: background 0.2s;
 }
-.mode-badge { font-weight: bold; color: #333; }
-.status-text span { color: #e91e63; font-weight: bold; }
+
+.cam-btn:hover {
+  background: #555;
+}
+
+.mode-badge {
+  font-weight: bold;
+  color: #333;
+  background: white;
+  padding: 5px 15px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+}
+
+.status-text {
+  font-size: 1.1rem;
+}
+
+.status-text span {
+  color: #4caf50; /* 초록색 포인트 */
+  font-weight: bold;
+  font-size: 1.3rem;
+  margin-left: 5px;
+}
 
 .sentence-box {
   background: #fff;
-  border: 2px solid #333;
+  border: 2px solid #eee;
   padding: 20px;
   border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
+
+.sentence-box h3 {
+  font-size: 1rem;
+  color: #888;
+  margin-bottom: 10px;
+}
+
 .result-text {
-  font-size: 2rem;
+  font-size: 2.5rem;
   min-height: 60px;
-  font-family: "Jalnan";
+  font-family: "Jalnan", sans-serif;
+  color: #333;
+  line-height: 1.4;
 }
-.composing { color: #aaa; }
-.cursor { animation: blink 1s infinite; }
-@keyframes blink { 50% { opacity: 0; } }
+
+.composing {
+  color: #aaa; /* 조합 중인 글자는 회색 */
+}
+
+.cursor {
+  display: inline-block;
+  width: 3px;
+  height: 40px;
+  background-color: #333;
+  margin-left: 5px;
+  vertical-align: middle;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
 
 .manual-controls {
   margin-top: 10px;
   display: flex;
   gap: 10px;
   justify-content: center;
+  flex-wrap: wrap;
 }
+
 .manual-controls button {
-  padding: 8px 15px;
-  border: 1px solid #ccc;
+  padding: 10px 20px;
+  border: 1px solid #ddd;
   background: white;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
+  font-family: "Jalnan", sans-serif;
+  transition: all 0.2s;
+}
+
+.manual-controls button:hover {
+  background: #f5f5f5;
+  border-color: #bbb;
 }

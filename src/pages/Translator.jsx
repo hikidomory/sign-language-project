@@ -1,16 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Hands } from '@mediapipe/hands';
 import { Camera } from '@mediapipe/camera_utils';
 import { toXY, extractFeatures } from '../utils/handUtils';
 import * as HE from '../utils/HangulEngine';
 import './Translator.css';
 
-// 배포 환경에 따라 API 주소 자동 설정
-const isProduction = import.meta.env.MODE === 'production';
 const API_URL = "https://itzel-unaching-unexceptionally.ngrok-free.dev/predict";
 
 const Translator = () => {
-  const [activeTab, setActiveTab] = useState('text2sign'); // 'text2sign' or 'cam2text'
+  const [activeTab, setActiveTab] = useState('text2sign'); 
 
   // --- 1. 텍스트 -> 수어 변수 ---
   const [inputText, setInputText] = useState("");
@@ -38,9 +36,49 @@ const Translator = () => {
     setSignTokens(tokens);
   };
 
+  // [핵심 추가] 토큰을 음절(원본 글자) 단위로 묶어주는 함수
+  const groupedTokens = useMemo(() => {
+    const groups = [];
+    let currentGroup = null;
+
+    signTokens.forEach((token) => {
+      // 공백 처리
+      if (token.key === 'space') {
+        // 공백은 별도 그룹으로 넣거나, 현재 그룹을 끊어주는 역할
+        groups.push({ type: 'space' });
+        currentGroup = null;
+        return;
+      }
+
+      // 새로운 글자(raw)가 시작되면 그룹 생성
+      if (!currentGroup || currentGroup.raw !== token.raw) {
+        currentGroup = { 
+          type: 'char', 
+          raw: token.raw, 
+          tokens: [] 
+        };
+        groups.push(currentGroup);
+      }
+      
+      // 현재 그룹에 자모 토큰 추가
+      currentGroup.tokens.push(token);
+    });
+
+    return groups;
+  }, [signTokens]);
+
+  // [핵심 추가] 이미지 경로 결정 함수 (숫자/문자 구분)
+  const getImagePath = (key) => {
+    const isNumeric = /^[0-9]+$/;
+    if (isNumeric.test(key)) {
+      return `/images/fingernumber/${key}.jpg`;
+    }
+    return `/images/fingerspell/${key}.jpg`;
+  };
+
+
   // --- 탭 2 로직: MediaPipe & AI ---
   useEffect(() => {
-    // activeTab이 'cam2text'가 아니거나 카메라가 꺼져있으면 실행하지 않음
     if (activeTab !== 'cam2text' || !isCamOn) return;
 
     const hands = new Hands({
@@ -72,7 +110,6 @@ const Translator = () => {
       if (camera) camera.stop();
       hands.close();
     };
-    // ⚠️ 에러 원인 해결: 의존성 배열에 필요한 변수들을 정확히 명시
   }, [activeTab, isCamOn, currentModel]); 
 
   const onResults = (results) => {
@@ -97,6 +134,7 @@ const Translator = () => {
   };
 
   const predictAndProcess = async (features) => {
+    // ... (기존 AI 로직 유지) ...
     try {
       const res = await fetch(API_URL, {
         method: "POST",
@@ -133,10 +171,11 @@ const Translator = () => {
   };
 
   const processInput = (label) => {
+    // ... (기존 processInput 로직 유지) ...
     if (label === 'conversion_model_1') {
       setCurrentModel(prev => {
         const next = prev === 'hangul' ? 'digit' : 'hangul';
-        resetState(); // 모드 변경 시 상태 초기화
+        resetState(); 
         return next;
       });
       return;
@@ -190,6 +229,7 @@ const Translator = () => {
   const composingChar = HE.composeHangul(syllable.cho, syllable.jung, syllable.jong) 
     || (syllable.cho || "") + (syllable.jung || "") + (syllable.jong || "");
 
+
   return (
     <div className="translator-container">
       <h1 className="page-title">수어 번역기</h1>
@@ -203,37 +243,57 @@ const Translator = () => {
         </button>
       </div>
 
+      {/* --- 탭 1: 텍스트 -> 수어 (수정됨) --- */}
       {activeTab === 'text2sign' && (
         <div className="panel text2sign">
           <div className="input-box">
             <textarea 
-              placeholder="번역할 내용을 입력하세요 (예: 안녕)" 
+              placeholder="번역할 내용을 입력하세요 (예: 안녕 123)" 
               value={inputText}
               onChange={(e)=>setInputText(e.target.value)}
             />
             <button onClick={handleTextRender}>번역하기</button>
           </div>
+
+          {/* 여기서 groupedTokens를 순회하며 
+             이전 방식(eomjeol_group)처럼 렌더링합니다. 
+          */}
           <div className="output-box">
-            {signTokens.map((token, idx) => (
-              <div key={idx} className="sign-card">
-                {token.key === 'space' ? (
-                  <div className="space"></div>
-                ) : (
-                  <>
-                    <img 
-                      src={`/images/fingerspell/${token.key}.jpg`} 
-                      onError={(e)=>{e.target.style.display='none'}} 
-                      alt={token.key} 
-                    />
-                    <span>{token.raw}</span>
-                  </>
-                )}
-              </div>
-            ))}
+            {groupedTokens.map((group, groupIdx) => {
+              // 공백 처리
+              if (group.type === 'space') {
+                return <div key={groupIdx} className="sign-space"></div>;
+              }
+
+              // 글자(음절) 처리
+              return (
+                <div key={groupIdx} className="eomjeol_group">
+                  {/* 왼쪽: 한글 원본 (예: 안) */}
+                  <div className="eomjeol_label">{group.raw}</div>
+                  
+                  {/* 오른쪽: 분해된 수어 이미지들 (예: ㅇ, ㅏ, ㄴ) */}
+                  <div className="eomjeol_signs">
+                    {group.tokens.map((token, tokenIdx) => (
+                      <div key={tokenIdx} className="sign-card">
+                        <img 
+                          src={getImagePath(token.key)} 
+                          alt={token.raw}
+                          onError={(e)=>{
+                            e.target.style.display='none';
+                            e.target.parentElement.innerText = token.label || token.key;
+                          }} 
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
+      {/* --- 탭 2: 웹캠 -> 텍스트 (기존 유지) --- */}
       {activeTab === 'cam2text' && (
         <div className="panel cam2text">
           <div className="cam-wrapper">
