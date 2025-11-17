@@ -162,8 +162,8 @@ const Study = () => {
 
         // 2. [핵심] 한글 자모 분리 현상 방지를 위해 유니코드 정규화(NFC) 적용
         // (이 과정을 거치면 서로 다른 코드로 된 'ㄴ'도 같은 'ㄴ'으로 통일됩니다)
-        predicted = predicted.normalize("NFC");
-        target = target.normalize("NFC");
+        predicted = predicted.normalize("NFKC");
+        target = target.normalize("NFKC");
 
         // 🔍 디버깅: 콘솔에서 진짜 문자 코드가 같은지 확인해보세요
         console.log(`[비교] AI: ${predicted} (Code: ${predicted.charCodeAt(0)}) vs 정답: ${target} (Code: ${target.charCodeAt(0)})`);
