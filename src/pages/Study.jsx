@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Hands } from '@mediapipe/hands';
 import { Camera } from '@mediapipe/camera_utils';
 
-// 🟢 modelData에서 데이터 가져오기 (AI 학습된 데이터만 사용)
+// 🟢 modelData에서 데이터 가져오기
 import { consonants, vowels, numbers } from '../data/modelData'; 
 
 import { toXY, extractFeatures } from '../utils/handUtils';
@@ -21,18 +21,19 @@ const Study = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const cameraRef = useRef(null);
-  const lastPredictionTime = useRef(0); 
+  const lastPredictionTime = useRef(0);
+  
+  // 🔒 [추가] 현재 서버와 통신 중인지 확인하는 "잠금 장치"
+  const isPredicting = useRef(false);
 
-  // 🌟 [수정됨] 현재 탭에 맞는 데이터 가져오기 (랜덤 섞기 적용)
+  // 🌟 현재 탭에 맞는 데이터 가져오기 (랜덤 섞기 적용)
   const currentData = useMemo(() => {
     if (activeTab === 'consonants') return consonants;
     if (activeTab === 'vowels') return vowels;
     if (activeTab === 'numbers') return numbers;
     
-    // 'all' (전체 연습)일 경우: 전체를 합치고 랜덤 섞기
     if (activeTab === 'all') {
       const allData = [...consonants, ...vowels, ...numbers];
-      // 데이터 섞기 (Fisher-Yates Shuffle)
       for (let i = allData.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [allData[i], allData[j]] = [allData[j], allData[i]];
@@ -40,7 +41,7 @@ const Study = () => {
       return allData;
     }
     return [];
-  }, [activeTab]); // 탭이 바뀔 때만 다시 계산(섞기)
+  }, [activeTab]);
 
   // --- MediaPipe 설정 ---
   useEffect(() => {
@@ -100,7 +101,9 @@ const Study = () => {
       const landmarks = results.multiHandLandmarks[0];
       
       const now = Date.now();
-      if (now - lastPredictionTime.current > 300) {
+      
+      // 🚨 [수정] 요청 간격을 1000ms(1초)로 늘리고, 통신 중(isPredicting)일 땐 요청 막음
+      if (now - lastPredictionTime.current > 1000 && !isPredicting.current) {
         lastPredictionTime.current = now;
         
         const coords = toXY(landmarks);
@@ -115,7 +118,13 @@ const Study = () => {
 
   // --- 서버 통신 함수 ---
   const predictSign = async (features, modelKey) => {
+    // 🔒 이미 통신 중이면 강제 종료 (이중 안전장치)
+    if (isPredicting.current) return;
+
     try {
+      isPredicting.current = true; // 🚩 깃발 들기 (통신 시작)
+      setPredictionMsg("AI가 분석 중... 🤔");
+
       const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -126,7 +135,7 @@ const Study = () => {
         const data = await response.json();
         const predictedLabel = data.label;
         
-        // 현재 정답 데이터가 있는지 확인 (데이터 로딩 전 에러 방지)
+        // 현재 정답 데이터가 있는지 확인
         if (!currentData[currentIndex]) return;
 
         const targetLabel = currentData[currentIndex].label.split(' ')[0];
@@ -138,10 +147,16 @@ const Study = () => {
           setPredictionMsg(`틀렸어요... (인식: ${predictedLabel})`);
           setIsCorrect(false);
         }
+      } else {
+          // 404, 500 에러 등 처리
+          setPredictionMsg("서버 응답 오류 ⚠️");
       }
     } catch (error) {
       console.error("Server Error:", error);
       setPredictionMsg("서버 연결 실패 ⚠️");
+    } finally {
+      // ✅ 성공하든 실패하든 무조건 깃발 내리기 (다음 요청 허용)
+      isPredicting.current = false; 
     }
   };
 
@@ -199,7 +214,6 @@ const Study = () => {
           {/* 왼쪽: 정답 이미지 */}
           <div className="study-card">
              <div className="card-img-wrapper">
-                {/* 데이터가 있을 때만 이미지 표시 */}
                 {currentData[currentIndex] && (
                   <img src={currentData[currentIndex].img} alt="수어" />
                 )}
