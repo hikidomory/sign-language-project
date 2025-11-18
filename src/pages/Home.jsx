@@ -29,7 +29,7 @@ const Home = () => {
       <div className="main-slider-wrapper">
         <Slider {...settings}>
           <div className="slide-item">
-            <img src="/images/main1.jpg" alt="배너 1" className="main-img" />
+            <img src="/images/main1.png" alt="배너 1" className="main-img" />
           </div>
           <div className="slide-item">
             <img src="/images/main2.png" alt="배너 2" className="main-img" />
