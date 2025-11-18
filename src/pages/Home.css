@@ -46,7 +46,7 @@
   align-items: center;
   background-color: pink; /* 원본 컬러 유지 */
   padding: 60px 0;
-  margin-bottom: 60px; /* 푸터와 겹치지 않게 여백 */
+  margin-bottom: 10px;
 }
 
 #studyroom_title {

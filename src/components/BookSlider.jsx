@@ -1,36 +1,29 @@
-import React from 'react';
+import React, { useRef } from 'react'; // ✅ useRef 추가
 import Slider from 'react-slick';
 import { Link } from 'react-router-dom';
 import { bookData } from '../data/bookData';
 import './BookSlider.css';
 
-// react-slick CSS는 Home.jsx에서 이미 import 했으므로 생략 가능하지만, 
-// 독립적인 컴포넌트 사용을 위해 넣어두어도 무방합니다.
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
 const BookSlider = () => {
+  // ✅ 슬라이더를 제어하기 위한 Ref 생성
+  const sliderRef = useRef(null);
+
   const settings = {
-    dots: false, // 하단 점 숨김
+    dots: false,
     infinite: true,
     speed: 500,
-    slidesToShow: 4, // 한 번에 보여줄 책 개수 (화면 크기에 따라 조정됨)
+    slidesToShow: 4,
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 3000,
+    arrows: false, // ✅ 슬라이더 자체 화살표는 숨김 (커스텀 화살표 사용)
     responsive: [
-      {
-        breakpoint: 1024,
-        settings: { slidesToShow: 3 }
-      },
-      {
-        breakpoint: 768,
-        settings: { slidesToShow: 2 }
-      },
-      {
-        breakpoint: 480,
-        settings: { slidesToShow: 1 }
-      }
+      { breakpoint: 1024, settings: { slidesToShow: 3 } },
+      { breakpoint: 768, settings: { slidesToShow: 2 } },
+      { breakpoint: 480, settings: { slidesToShow: 1 } }
     ]
   };
 
@@ -38,7 +31,7 @@ const BookSlider = () => {
     <div className="book-section-wrapper">
       <div className="book-container">
         
-        {/* 왼쪽: 타이틀 및 설명 영역 (파란색 박스) */}
+        {/* 왼쪽 패널 */}
         <div className="book-info-panel">
           <h3>수어 교재 추천</h3>
           <h1>
@@ -47,17 +40,19 @@ const BookSlider = () => {
             함께 시작해볼까요?
           </h1>
           <div className="page-indicator">
-             {/* 디자인 요소 (장식용) */}
-             <span>1 / 2</span>
+             <span>Slide</span>
              <div className="arrows">
-               <span>&lt;</span> <span>&gt;</span>
+               {/* ✅ 클릭 이벤트 연결 */}
+               <span onClick={() => sliderRef.current.slickPrev()}>&lt;</span> 
+               <span onClick={() => sliderRef.current.slickNext()}>&gt;</span>
              </div>
           </div>
         </div>
 
-        {/* 오른쪽: 슬라이더 영역 */}
+        {/* 오른쪽 슬라이더 */}
         <div className="book-slider-area">
-          <Slider {...settings}>
+          {/* ✅ ref 연결 */}
+          <Slider ref={sliderRef} {...settings}>
             {bookData.map((book) => (
               <div key={book.id} className="book-card-wrapper">
                 <div className="book-card">
