@@ -35,7 +35,7 @@ const Home = () => {
             <img src="/images/main2.png" alt="배너 2" className="main-img" />
           </div>
           <div className="slide-item">
-            <img src="/images/test3.jpg" alt="배너 3" className="main-img" />
+            <img src="/images/main3.png" alt="배너 3" className="main-img" />
           </div>
         </Slider>
       </div>
