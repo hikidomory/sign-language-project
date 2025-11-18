@@ -96,7 +96,7 @@
 .book-img-box {
   width: 100%;
   /* 높이를 280px -> 400px로 늘려 책이 훨씬 커 보이게 함 */
-  height: 400px;
+  height: 450px;
   position: relative;
   overflow: hidden;
 }
