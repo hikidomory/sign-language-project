@@ -1,0 +1,168 @@
+.book-section-wrapper {
+  width: 100%;
+  background-color: #fff;
+  padding: 80px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.book-container {
+  width: 90%;
+  max-width: 1200px;
+  display: flex;
+  align-items: stretch; /* 높이 맞춤 */
+  gap: 20px;
+  background-color: #fff;
+}
+
+/* --- 왼쪽 파란색 패널 --- */
+.book-info-panel {
+  flex: 0 0 350px; /* 너비 고정 */
+  background-color: #2c5bf0; /* 진한 파란색 */
+  color: white;
+  padding: 40px;
+  border-radius: 20px 0 0 20px; /* 왼쪽만 둥글게 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
+  z-index: 2;
+}
+
+.book-info-panel h3 {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  opacity: 0.9;
+  font-weight: normal;
+}
+
+.book-info-panel h1 {
+  font-size: 2.2rem;
+  line-height: 1.4;
+  font-weight: bold;
+  font-family: "Jalnan"; /* 폰트 적용 */
+  margin-bottom: 40px;
+}
+
+.page-indicator {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 1.2rem;
+  margin-top: auto;
+}
+.arrows span {
+  cursor: pointer;
+  margin-right: 10px;
+  opacity: 0.7;
+}
+.arrows span:hover { opacity: 1; }
+
+
+/* --- 오른쪽 슬라이더 영역 --- */
+.book-slider-area {
+  flex: 1; /* 남은 공간 차지 */
+  overflow: hidden; /* 슬라이더 넘침 방지 */
+  padding: 20px 0 20px 20px; /* 그림자 공간 확보 */
+}
+
+/* 슬라이드 개별 카드 */
+.book-card-wrapper {
+  padding: 10px; /* 카드 간격 */
+}
+
+.book-card {
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+  transition: transform 0.3s;
+}
+
+.book-card:hover {
+  transform: translateY(-10px);
+}
+
+.book-img-box {
+  width: 100%;
+  height: 280px; /* 책 이미지 높이 */
+  position: relative;
+  overflow: hidden;
+}
+
+.book-img-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s;
+}
+
+/* 호버 시 이미지 확대 효과 */
+.book-card:hover .book-img-box img {
+  transform: scale(1.1);
+}
+
+/* 마우스 올렸을 때 설명 오버레이 */
+.book-overlay {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+  padding: 20px;
+  text-align: center;
+}
+.book-card:hover .book-overlay {
+  opacity: 1;
+}
+
+.book-meta {
+  padding: 20px;
+  text-align: left;
+}
+
+.book-meta h4 {
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.start-btn {
+  display: inline-flex;
+  align-items: center;
+  color: #555;
+  font-size: 0.9rem;
+  font-weight: bold;
+  transition: color 0.2s;
+}
+
+.start-btn .dot {
+  color: #ff4757; /* 빨간 점 포인트 */
+  margin-left: 8px;
+  font-size: 0.8rem;
+}
+
+.start-btn:hover {
+  color: #2c5bf0;
+}
+
+/* 반응형 처리 */
+@media (max-width: 768px) {
+  .book-container {
+    flex-direction: column;
+  }
+  .book-info-panel {
+    border-radius: 20px;
+    margin-bottom: 20px;
+    flex: none;
+    height: 200px;
+  }
+}

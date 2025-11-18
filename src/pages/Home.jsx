@@ -1,12 +1,13 @@
 // src/pages/Home.jsx
-import React from 'react';
-import Slider from 'react-slick';
-import { Link } from 'react-router-dom';
+import React from "react";
+import Slider from "react-slick";
+import { Link } from "react-router-dom";
+import BookSlider from "../components/BookSlider";
 
 // 슬라이더 라이브러리 필수 CSS (import 순서 중요)
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import './Home.css';
+import "./Home.css";
 
 const Home = () => {
   // 슬라이더 설정 (기존 index.js 설정 이식)
@@ -48,15 +49,21 @@ const Home = () => {
         </div>
 
         <div id="studyroom_list">
-          <Link to="/study" className="studyroom_content">자음 연습</Link>
-          <Link to="/study" className="studyroom_content">모음 연습</Link>
-          <Link to="/study" className="studyroom_content">숫자 연습</Link>
-          <Link to="/study" className="studyroom_content">전체 연습</Link>
-          {/* 아래 항목들도 학습 페이지로 연결 (추후 기능 확장에 맞춰 수정 가능) */}
-          <Link to="/study" className="studyroom_content">짧은 단어 연습</Link>
-          <Link to="/study" className="studyroom_content">긴 단어 연습</Link>
+          <Link to="/study" className="studyroom_content">
+            자음 연습
+          </Link>
+          <Link to="/study" className="studyroom_content">
+            모음 연습
+          </Link>
+          <Link to="/study" className="studyroom_content">
+            숫자 연습
+          </Link>
+          <Link to="/study" className="studyroom_content">
+            전체 연습
+          </Link>
         </div>
       </div>
+      <BookSlider />
     </div>
   );
 };
