@@ -14,6 +14,9 @@ const Tree = () => {
 
   // 1. 초기화: 날짜 확인 및 로컬스토리지 로드
   useEffect(() => {
+    // 🌟 [수정 부분 1]: body 클래스 추가
+    document.body.classList.add('tree-page-bg');
+
     const today = new Date();
     const year = today.getFullYear();
     const month = today.getMonth(); // 0 ~ 11
@@ -24,7 +27,12 @@ const Tree = () => {
     const storageKey = `completedDays_${year}_${month}`;
     const savedData = JSON.parse(localStorage.getItem(storageKey)) || [];
     setCompletedDays(savedData);
-  }, []);
+    
+    return () => {
+      // 🌟 [수정 부분 2]: 컴포넌트가 사라질 때 클래스 제거
+      document.body.classList.remove('tree-page-bg');
+    };
+  }, []); // 텅 빈 배열은 마운트/언마운트 시에만 실행을 보장합니다.
 
   // 2. 사과(날짜) 클릭 핸들러
   const handleSpotClick = (day) => {
@@ -79,7 +87,8 @@ const Tree = () => {
 
   // 4. 달성률 계산
   const totalDays = new Date(currentDate.year, currentDate.month + 1, 0).getDate(); // 이번달 마지막 날짜
-  const harvestRate = currentDate.day === 0 ? 0 : Math.round((completedDays.length / currentDate.day) * 100); // (수확량 / 오늘날짜)로 계산하거나 (수확량 / 31)로 계산
+  // (수확량 / 오늘날짜) * 100 으로 계산
+  const harvestRate = currentDate.day === 0 ? 0 : Math.round((completedDays.length / currentDate.day) * 100); 
 
   // 1~31일 배열 생성
   const daysArray = Array.from({ length: 31 }, (_, i) => i + 1);
