@@ -1,0 +1,115 @@
+/* src/components/RelatedSites.css */
+
+.sites-section {
+  width: 100%;
+  background-color: #f9f9f9; /* 연한 회색 배경으로 구분 */
+  padding: 80px 0 120px 0;   /* 푸터와 겹치지 않게 하단 여백 넉넉히 */
+  display: flex;
+  justify-content: center;
+}
+
+.sites-container {
+  width: 90%;
+  max-width: 1200px;
+}
+
+.sites-title {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.sites-title h2 {
+  font-size: 2.2rem;
+  color: #333;
+  margin-bottom: 10px;
+  font-family: "Jalnan";
+}
+
+.sites-title p {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+/* 그리드 레이아웃 */
+.sites-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+}
+
+/* 카드 스타일 */
+.site-group-card {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  transition: transform 0.3s;
+  border: 1px solid #eee;
+}
+
+.site-group-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.site-group-card h3 {
+  font-size: 1.4rem;
+  color: #2c5bf0; /* 포인트 컬러 */
+  margin-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 10px;
+  font-family: "Jalnan";
+}
+
+/* 리스트 스타일 */
+.site-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.site-list li {
+  margin-bottom: 15px;
+}
+
+.site-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  padding: 10px;
+  border-radius: 10px;
+  transition: background-color 0.2s;
+}
+
+.site-link:hover {
+  background-color: #f5f8ff;
+}
+
+.site-name {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #333;
+  margin-right: 10px;
+}
+
+.site-desc {
+  font-size: 0.9rem;
+  color: #888;
+  flex: 1; /* 남은 공간 차지 */
+}
+
+.arrow {
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.site-link:hover .arrow {
+  color: #2c5bf0;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .sites-grid {
+    grid-template-columns: 1fr;
+  }
+}
