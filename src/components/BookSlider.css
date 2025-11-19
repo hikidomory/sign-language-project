@@ -1,8 +1,10 @@
 .book-section-wrapper {
   width: 100%;
-  background-color: #fff;
-  /* ✅ 공백 최소화: 위쪽 패딩을 80px -> 40px로 줄임 */
-  padding: 40px 0 80px 0;
+  /* ✅ 배경색 변경: 연한 회색으로 확연한 대비 */
+  background-color: #f0f0f0; 
+  
+  /* 나머지 패딩 유지 */
+  padding: 40px 0 80px 0; 
   display: flex;
   justify-content: center;
 }
