@@ -29,8 +29,8 @@
   flex-direction: column;
   justify-content: center;
   position: relative;
-  box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.1);
-  z-index: 2;
+  box-shadow: 10px 0 20px -8px rgba(0, 0, 0, 0.3); /* X축, Y축, 블러, 스프레드, 색상 */
+  z-index: 2; /* 그림자가 다른 요소 위에 보이도록 */
 }
 
 /* ... (타이틀 폰트 등 기존 스타일 유지) ... */
