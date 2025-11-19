@@ -1,5 +1,11 @@
 /* src/pages/Tree.css */
-
+body {
+  background-image: url("/images/background.png");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
 .tree-container {
   width: 90%;
   max-width: 1200px;

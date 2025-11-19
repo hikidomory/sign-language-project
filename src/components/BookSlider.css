@@ -16,6 +16,9 @@
   align-items: stretch;
   gap: 20px;
   background-color: #fff;
+  border-radius: 20px;
+  overflow: hidden; 
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* 블록 전체에 그림자 추가 */
 }
 
 /* --- 왼쪽 파란색 패널 --- */
@@ -74,8 +77,8 @@
 .book-slider-area {
   flex: 1;
   overflow: hidden;
-  /* 그림자가 잘리지 않도록 패딩 넉넉히 */
   padding: 20px 0 20px 20px;
+  border-radius: 0 20px 20px 0; 
 }
 
 .book-card-wrapper {
