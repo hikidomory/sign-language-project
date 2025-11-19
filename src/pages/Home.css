@@ -1,9 +1,9 @@
 /* src/pages/Home.css */
 
-/* 전체 컨테이너: 헤더 공간 확보 */
+/* 전체 컨테이너 */
 .home-container {
   width: 100%;
-  padding-top: 0; /* 슬라이더가 헤더 바로 아래부터 시작되도록 0 */
+  padding-top: 0;
 }
 
 /* 슬라이더 래퍼 */
@@ -17,7 +17,7 @@
 /* 이미지 스타일 */
 .main-img {
   width: 100%;
-  height: 700px; /* 원본 높이 유지 */
+  height: 700px;
   object-fit: cover;
   display: block;
 }
@@ -36,17 +36,19 @@
 
 .slick-dots li.slick-active button:before {
   opacity: 1;
-  color: black; /* 활성화된 점은 검은색으로 강조 */
+  color: black;
 }
 
-/* 학습 섹션 (분홍색 영역) */
+/* 학습 바로가기 섹션 (분홍색 -> 클린 디자인) */
 .main-studyroom {
+  /* ✅ 배경색 변경 및 불필요한 공백 제거 */
+  background-color: #fcfcfc; /* 아주 연한 미색 배경 */
+  padding: 60px 0;
+  margin-bottom: 0; /* ✅ 불필요한 하단 여백 제거 */
+  
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: pink; /* 원본 컬러 유지 */
-  padding: 60px 0;
-  margin-bottom: 10px;
 }
 
 #studyroom_title {
@@ -54,11 +56,12 @@
   margin-bottom: 30px;
 }
 
+/* ✅ 타이틀에 포인트 컬러 적용 */
 #studyroom_title div:first-child {
   font-size: 2.5rem;
   margin-bottom: 10px;
   font-weight: bold;
-  color: #333;
+  color: #2c5bf0; /* 🌟 새로운 주색상 (청색 계열) 적용 */
 }
 
 #studyroom_title div:nth-child(2) {
@@ -74,27 +77,27 @@
   max-width: 1000px;
 }
 
-/* 버튼 스타일 */
+/* ✅ 버튼 스타일 변경 (깔끔한 카드 형태) */
 .studyroom_content {
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 0 30px;
-  height: 55px;
+  height: 50px; /* 높이 살짝 줄임 */
   background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 30px;
-  font-size: 1.2rem;
-  font-weight: bold;
+  border: 1px solid #e0e0e0; /* 얇고 밝은 테두리 */
+  border-radius: 10px; /* 둥근 사각형 */
+  font-size: 1.1rem;
+  font-weight: 500; /* Bold보다 덜 강한 굵기 */
   color: #333;
   text-decoration: none;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04); /* 부드러운 그림자 */
 }
 
 .studyroom_content:hover {
-  background-color: #f5f5f5;
-  transform: translateY(-5px);
+  background-color: #eef4ff; /* 🌟 연한 청색 배경 */
+  transform: translateY(-3px); /* 🌟 살짝만 위로 */
+  color: #2c5bf0; /* 🌟 텍스트 색상 변경 */
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  color: #000;
 }
