@@ -109,7 +109,66 @@
 
 /* 반응형 */
 @media (max-width: 768px) {
+  /* 1. 전체 섹션 여백 축소 */
+  .sites-section {
+    padding: 60px 0 80px 0; /* 위아래 여백 줄임 */
+  }
+
+  /* 2. 메인 타이틀 크기 축소 */
+  .sites-title {
+    margin-bottom: 30px;
+  }
+  .sites-title h2 {
+    font-size: 1.8rem; /* 2.2rem -> 1.8rem */
+  }
+  .sites-title p {
+    font-size: 1rem;
+    word-break: keep-all; /* 줄바꿈 자연스럽게 */
+  }
+
+  /* 3. 그리드: 한 줄에 하나씩 */
   .sites-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* 무조건 한 줄 */
+    gap: 20px;
+  }
+
+  /* 4. 카드 내부 여백 및 폰트 축소 */
+  .site-group-card {
+    padding: 20px; /* 30px -> 20px (내부 공간 확보) */
+  }
+
+  .site-group-card h3 {
+    font-size: 1.2rem; /* 1.4rem -> 1.2rem */
+    margin-bottom: 15px;
+  }
+}
+
+/* 스마트폰 (480px 이하) - 더 작게 조정 */
+@media (max-width: 480px) {
+  .sites-title h2 {
+    font-size: 1.5rem; /* 제목 더 작게 */
+  }
+
+  /* 리스트 아이템 글자 크기 최적화 */
+  .site-link {
+    padding: 8px; /* 터치 영역은 유지하되 패딩 축소 */
+  }
+
+  .site-name {
+    font-size: 1rem; /* 1.1rem -> 1rem (본문 기본 크기) */
+  }
+
+  .site-desc {
+    font-size: 0.85rem; /* 설명 글자는 더 작고 은은하게 */
+    color: #999;
+  }
+
+  .arrow {
+    font-size: 0.8rem;
+  }
+  
+  /* 카드 그림자 줄여서 심플하게 */
+  .site-group-card {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   }
 }
