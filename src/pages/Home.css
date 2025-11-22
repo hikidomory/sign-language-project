@@ -105,8 +105,8 @@
   /* 1. 메인 슬라이더 이미지 높이 조절 */
   .main-img {
     height: 40vh; /* 화면 높이의 40%만 차지하도록 (약 300~400px) */
-    min-height: 250px;
-    padding-top: 120px;
+    min-height: 300px;
+    padding-top: 80px;
   }
 
   /* 2. 슬라이더 점 위치 조정 */
