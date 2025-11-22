@@ -296,3 +296,109 @@
   background: #f5f5f5;
   border-color: #bbb;
 }
+
+@media (max-width: 768px) {
+  .translator-container {
+    width: 95%;
+    padding-top: 120px; /* 헤더 여백 축소 */
+    padding-bottom: 80px;
+  }
+
+  .page-title {
+    font-size: 2rem;
+  }
+
+  /* 탭 버튼 모바일 최적화 */
+  .tabs {
+    flex-direction: column; /* 세로로 쌓기 */
+    gap: 10px;
+  }
+  .tab {
+    width: 100%;
+    text-align: center;
+    padding: 10px;
+    font-size: 1rem;
+  }
+
+  /* --- Text2Sign 모드 반응형 --- */
+  .input-box {
+    flex-direction: column; /* 입력창과 버튼 위아래 배치 */
+  }
+
+  .input-box textarea {
+    height: 50px; /* 높이 살짝 줄임 */
+  }
+
+  .input-box button {
+    width: 100%;
+    height: 50px; /* 버튼 높이 확보 (터치 용이) */
+  }
+
+  /* 글자 그룹 레이아웃 변경 (가로 -> 세로) */
+  .eomjeol_group {
+    flex-direction: column;
+    align-items: flex-start; /* 왼쪽 정렬 */
+    gap: 10px;
+  }
+
+  .eomjeol_label {
+    width: 100%; /* 전체 너비 */
+    border-right: none; /* 오른쪽 선 제거 */
+    border-bottom: 2px solid #eee; /* 아래쪽 선 추가 */
+    padding-right: 0;
+    padding-bottom: 5px;
+    margin-right: 0;
+    margin-bottom: 10px;
+    text-align: left;
+    font-size: 1.8rem;
+  }
+
+  /* 수어 카드 크기 축소 */
+  .sign-card {
+    width: 70px;
+    height: 95px;
+  }
+  .sign-card img {
+    width: 50px;
+    height: 50px;
+  }
+  .sign-card span {
+    font-size: 0.8rem;
+  }
+
+  /* --- Cam2Text 모드 반응형 --- */
+  .cam-wrapper {
+    width: 100%;
+    height: auto; /* 고정 높이 해제 */
+    aspect-ratio: 4 / 3; /* 웹캠 비율(4:3) 유지하며 줄어듦 */
+  }
+
+  /* 컨트롤 패널 세로 배치 */
+  .control-panel {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+
+  .cam-btn {
+    width: 100%;
+    padding: 12px;
+  }
+  
+  .status-text {
+    font-size: 1rem;
+  }
+
+  /* 결과 문장 박스 */
+  .result-text {
+    font-size: 1.5rem; /* 글자 크기 축소 */
+    min-height: 50px;
+  }
+
+  /* 수동 조작 버튼 */
+  .manual-controls button {
+    padding: 8px 15px;
+    font-size: 0.9rem;
+    flex: 1; /* 버튼들이 공간을 나눠 갖도록 */
+  }
+}

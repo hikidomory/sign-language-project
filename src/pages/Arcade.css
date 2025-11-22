@@ -94,3 +94,64 @@
   box-shadow: none;
   border-color: #eee;
 }
+
+@media (max-width: 768px) {
+  .arcade-container {
+    /* 헤더 높이가 작아지므로 상단 여백도 줄임 (120px -> 80px) */
+    padding-top: 120px; 
+    padding-bottom: 60px;
+    width: 95%; /* 좌우 여백 확보 */
+  }
+
+  /* 타이틀 크기 조정 */
+  .page-title {
+    margin-bottom: 30px; /* 간격 축소 */
+  }
+
+  .page-title h1 {
+    font-size: 2rem; /* 3rem -> 2rem */
+  }
+
+  .page-title .subtitle {
+    font-size: 1rem;
+    word-break: keep-all; /* 문장이 어색하게 끊기지 않도록 */
+  }
+
+  /* 그리드 간격 좁힘 */
+  .game-list {
+    gap: 15px;
+  }
+}
+
+/* 모바일 (480px 이하) */
+@media (max-width: 480px) {
+  /* 카드 높이 및 아이콘 크기 최적화 */
+  .card-icon {
+    height: 140px; /* 180px -> 140px */
+    font-size: 3.5rem; /* 아이콘 이모지 크기 축소 */
+  }
+
+  .card-info {
+    padding: 15px; /* 내부 패딩 축소 */
+  }
+
+  .card-info h3 {
+    font-size: 1.2rem;
+  }
+
+  .card-info p {
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+  }
+
+  /* 모바일에서 호버 효과 제거 (터치 시 화면 흔들림 방지) */
+  .game-card:hover {
+    transform: none;
+  }
+  
+  /* 버튼 크기 살짝 조절 */
+  .play-btn {
+    padding: 6px 15px;
+    font-size: 0.9rem;
+  }
+}

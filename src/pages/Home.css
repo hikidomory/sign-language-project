@@ -100,3 +100,56 @@
   color: #2c5bf0; /* 🌟 텍스트 색상 변경 */
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
+
+@media (max-width: 768px) {
+  /* 1. 메인 슬라이더 이미지 높이 조절 */
+  .main-img {
+    height: 40vh; /* 화면 높이의 40%만 차지하도록 (약 300~400px) */
+    min-height: 250px;
+  }
+
+  /* 2. 슬라이더 점 위치 조정 */
+  .slick-dots {
+    bottom: 10px;
+  }
+
+  /* 3. 학습 바로가기 섹션 */
+  .main-studyroom {
+    padding: 40px 20px;
+  }
+
+  #studyroom_title div:first-child {
+    font-size: 1.8rem; /* 타이틀 크기 축소 */
+  }
+
+  #studyroom_title div:nth-child(2) {
+    font-size: 1rem;
+  }
+
+  #studyroom_list {
+    gap: 10px;
+    width: 100%; /* 전체 너비 사용 */
+  }
+
+  /* 버튼을 2개씩 배치 (그리드 형태) */
+  .studyroom_content {
+    width: calc(50% - 10px); /* 2개씩 꽉 차게 배치 */
+    height: 45px;
+    font-size: 0.95rem;
+    padding: 0; /* 내부 패딩 제거하고 중앙 정렬 의존 */
+  }
+}
+
+/* 아주 작은 폰 화면 (480px 이하) */
+@media (max-width: 480px) {
+  .main-img {
+    height: 250px;
+  }
+  
+  /* 버튼을 한 줄에 하나씩 꽉 차게 하고 싶다면 주석 해제 */
+  /*
+  .studyroom_content {
+    width: 100%;
+  }
+  */
+}

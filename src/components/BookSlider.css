@@ -168,12 +168,57 @@
 
 @media (max-width: 768px) {
   .book-container {
-    flex-direction: column;
+    flex-direction: column; /* 세로 배치 */
+    width: 95%; /* 모바일에서 좌우 여백 줄임 */
   }
+
+  /* 왼쪽 파란 패널 (모바일에서는 상단 헤더처럼 변신) */
   .book-info-panel {
+    width: 100%;
+    flex: none; /* flex 크기 고정 해제 */
+    height: auto; /* 높이를 내용에 맞게 자동 조절 */
+    padding: 30px 20px;
     border-radius: 20px;
     margin-bottom: 20px;
-    flex: none;
-    height: 200px;
+    text-align: center; /* 텍스트 중앙 정렬 */
+  }
+
+  .book-info-panel h1 {
+    font-size: 1.5rem; /* 타이틀 크기 줄임 */
+    margin-bottom: 20px;
+  }
+  
+  .book-info-panel h1 br {
+    display: none; /* 줄바꿈 제거해서 한 줄(혹은 자연스러운 줄바꿈)로 */
+  }
+
+  /* 화살표 위치 조정 */
+  .page-indicator {
+    justify-content: center; /* 중앙 정렬 */
+    margin-top: 20px;
+  }
+
+  /* 오른쪽 슬라이더 영역 */
+  .book-slider-area {
+    padding: 0; /* 패딩 제거 */
+  }
+
+  /* 책 이미지 크기 최적화 */
+  .book-img-box {
+    height: 300px; /* 모바일에서는 450px -> 300px로 축소 */
+  }
+  
+  /* 책 설명 텍스트 */
+  .book-meta h4 {
+    font-size: 1rem;
+  }
+  
+  /* 모바일에서는 호버 효과 제거 (터치 시 이상 동작 방지) */
+  .book-card:hover {
+    transform: none;
+  }
+  .book-overlay {
+    /* 모바일에서는 항상 보이게 하거나, 터치 시 보이게 정책 결정 필요 */
+    /* 여기서는 기본적으로 숨김 유지 */
   }
 }

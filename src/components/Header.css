@@ -40,3 +40,48 @@
   width: 50px;
   filter: invert(1);
 }
+@media (max-width: 960px) {
+  .header_nav {
+    padding: 0 15px;
+    height: 60px; /* 헤더 높이 조금 축소 */
+  }
+
+  /* 로고 크기 조절 */
+  #main_icon {
+    width: 100px; /* 모바일에서 로고 너무 크지 않게 */
+  }
+
+  /* 메뉴 아이콘 크기 조절 */
+  #nav_menu {
+    width: 35px;
+  }
+
+  /* 가운데 네비게이션 링크들을 모바일 친화적으로 변경 */
+  .header_nav > div {
+    display: flex;
+    overflow-x: auto; /* 가로 스크롤 가능하게 */
+    white-space: nowrap;
+    position: absolute; /* 가운데 정렬을 풀고 하단이나 별도 위치로 */
+    top: 60px; /* 헤더 바로 아래 */
+    left: 0;
+    width: 100%;
+    background: white;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    
+    /* 스크롤바 숨기기 (선택사항) */
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  .header_nav > div::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  .nav_content {
+    width: auto; /* 고정 너비 해제 */
+    padding: 0 12px; /* 좌우 여백으로 터치 영역 확보 */
+    font-size: 1rem; /* 글자 크기 축소 */
+    flex-shrink: 0;
+  }
+}

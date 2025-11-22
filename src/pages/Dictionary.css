@@ -73,3 +73,70 @@
   font-weight: bold;
   margin-top: 5px;
 }
+
+@media (max-width: 768px) {
+  .dictionary-wrap {
+    padding-top: 120px; /* 헤더 높이 축소에 맞춰 여백 조정 */
+    padding-bottom: 60px;
+    width: 95%; /* 좌우 여백을 줄여 컨텐츠 공간 확보 */
+  }
+
+  /* 타이틀 크기 축소 */
+  .dictionary-wrap h1 {
+    font-size: 2rem; 
+    margin-bottom: 5px;
+  }
+  
+  .dictionary-wrap .subtitle {
+    font-size: 1rem;
+    margin-bottom: 30px;
+  }
+
+  .dictionary-wrap h2 {
+    font-size: 1.3rem; /* 섹션 제목(지문자, 지숫자 등) 크기 조절 */
+    margin-top: 30px;
+  }
+
+  /* ✅ 중요: 모바일에서 카드 크기 재조정 */
+  .dictionary-grid {
+    /* 기존 200px은 모바일에서 1열로 나옴 -> 140px로 줄여 2열 배치 유도 */
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 15px; /* 간격 조금 좁힘 */
+  }
+
+  .dict-item {
+    padding: 10px; /* 카드 내부 여백 축소 */
+  }
+
+  .dict-item img {
+    height: 140px; /* 이미지 높이를 줄여서 공간 절약 */
+  }
+
+  .dict-item p {
+    font-size: 1.2rem; /* 글자 크기 축소 */
+  }
+}
+
+/* 작은 스마트폰 (480px 이하) */
+@media (max-width: 480px) {
+  /* 확실하게 2열로 고정 */
+  .dictionary-grid {
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 10px;
+  }
+
+  .dict-item img {
+    height: 110px; /* 이미지를 더 작게 */
+  }
+  
+  .dict-item p {
+    font-size: 1.1rem;
+    margin-top: 2px;
+  }
+
+  /* 모바일 터치 시 호버 효과(위로 뜨는 것) 제거 - 깔끔한 터치감 위해 */
+  .dict-item:hover {
+    transform: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+}

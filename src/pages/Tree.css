@@ -218,3 +218,121 @@ body.tree-page-bg {
   font-size: 1.1rem;
   cursor: pointer;
 }
+
+@media (max-width: 1024px) {
+  .tree-container {
+    width: 95%;
+    padding-top: 120px; /* 헤더 여백 축소 */
+    padding-bottom: 60px;
+  }
+
+  .tree-container h1 {
+    font-size: 2.2rem;
+  }
+
+  /* 레이아웃 구조 변경: 세로 배치 */
+  .content-layout {
+    flex-direction: column-reverse; /* 칠판을 나무보다 위에 보여주려면 reverse 사용 (선택사항) */
+    /* 칠판을 아래에 두고 싶다면 그냥 'column'으로 변경하세요 */
+    align-items: center;
+    gap: 30px;
+  }
+
+  /* 칠판 (스코어보드) 너비 확장 */
+  .scoreboard {
+    flex-basis: auto;
+    width: 100%;
+    max-width: 500px; /* 너무 넓어지지 않게 제한 */
+    margin-bottom: 20px;
+  }
+
+  /* 나무 영역 너비 자동 조절 */
+  #tree-wrapper {
+    flex-basis: auto;
+    width: 100%;
+    max-width: 600px; /* 태블릿에서 적당한 크기 유지 */
+  }
+}
+
+/* 모바일 (600px 이하) */
+@media (max-width: 600px) {
+  /* 배경 이미지 고정 해제 (모바일 성능/호환성 이슈 방지) */
+  body.tree-page-bg {
+    background-attachment: scroll; 
+  }
+
+  .tree-container h1 {
+    font-size: 1.8rem;
+  }
+  
+  .tree-container .subtitle {
+    font-size: 1rem;
+    margin-bottom: 20px;
+  }
+
+  /* 칠판 폰트 크기 조절 */
+  .scoreboard {
+    padding: 15px;
+  }
+  .scoreboard h2 {
+    font-size: 1.5rem;
+  }
+  .score-item {
+    font-size: 1rem;
+  }
+
+  /* ✅ [핵심] 사과(Spot) 크기 축소 */
+  /* 나무가 작아지면 사과끼리 겹치므로 크기를 줄여야 함 */
+  .spot {
+    width: 35px;  /* 60px -> 35px */
+    height: 35px;
+    font-size: 0.8rem; /* 글자 크기 축소 */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+
+  /* 마우스 오버 확대 효과 제거 (터치 간섭 방지) */
+  .spot:hover {
+    transform: none; 
+  }
+
+  /* 완료된 사과 이미지 크기 조절 */
+  .spot.completed img {
+    width: 55px; /* 100px -> 55px */
+    height: 55px;
+  }
+
+  /* --- 퀴즈 모달 반응형 --- */
+  .quiz-modal {
+    width: 90%;
+    padding: 20px;
+  }
+
+  .quiz-imgs img {
+    width: 80px;  /* 퀴즈 이미지 작게 */
+    height: 80px;
+  }
+
+  .quiz-input {
+    width: 90%;
+    font-size: 1rem;
+  }
+
+  .quiz-submit-btn {
+    width: 100%;
+    padding: 10px;
+  }
+}
+
+/* 아주 작은 화면 (Galaxy Fold 등, 360px 이하) */
+@media (max-width: 360px) {
+  .spot {
+    width: 28px;
+    height: 28px;
+    font-size: 0.7rem;
+  }
+  
+  .spot.completed img {
+    width: 45px;
+    height: 45px;
+  }
+}
