@@ -106,6 +106,7 @@
   .main-img {
     height: 40vh; /* 화면 높이의 40%만 차지하도록 (약 300~400px) */
     min-height: 250px;
+    padding-top: 120px;
   }
 
   /* 2. 슬라이더 점 위치 조정 */
