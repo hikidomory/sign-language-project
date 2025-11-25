@@ -174,7 +174,7 @@ const Study = () => {
             processedData.push(lastFrame);
         }
     }
-
+console.log("훔칠 데이터:", JSON.stringify(processedData));
     setPredictionMsg("분석 중...");
     predictSign(processedData, 'word', targetLabelRef.current);
     
