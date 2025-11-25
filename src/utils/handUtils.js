@@ -95,23 +95,27 @@ export function extractFeatures(coords) {
 
 // ... (기존 extractFeatures 등 위쪽 코드 유지) ...
 
-// ✅ [추가] Holistic 모델용 데이터 추출 함수 (Python 코드 1_collect_data.py와 동일 로직)
 export function extractHolisticFeatures(results) {
-  // 1. Pose (33개 포인트 * 4값(x,y,z,vis)) = 132개
+  // 1. Pose 처리 (33개 * 4값 = 132개)
+  // Python 학습 시 cv2.flip을 썼다면 x좌표가 반전되어 있음. 이를 웹에서도 똑같이 1-x 처리해야 함.
   const pose = results.poseLandmarks 
-    ? results.poseLandmarks.flatMap(p => [p.x, p.y, p.z, p.visibility])
+    ? results.poseLandmarks.flatMap(p => [
+        1 - p.x, // 🌟 X좌표 반전 (Mirroring)
+        p.y, 
+        p.z, 
+        p.visibility || 0 // 안전장치: visibility가 없으면 0
+      ])
     : new Array(33 * 4).fill(0);
-
-  // 2. Left Hand (21개 포인트 * 3값(x,y,z)) = 63개
+  
   const lh = results.leftHandLandmarks
-    ? results.leftHandLandmarks.flatMap(p => [p.x, p.y, p.z])
+    ? results.leftHandLandmarks.flatMap(p => [1 - p.x, p.y, p.z])
     : new Array(21 * 3).fill(0);
 
-  // 3. Right Hand (21개 포인트 * 3값(x,y,z)) = 63개
   const rh = results.rightHandLandmarks
-    ? results.rightHandLandmarks.flatMap(p => [p.x, p.y, p.z])
+    ? results.rightHandLandmarks.flatMap(p => [1 - p.x, p.y, p.z])
     : new Array(21 * 3).fill(0);
 
-  // 순서대로 합치기: Pose + Left + Right = 258개
+  // 3. 순서 조합: Python 코드(1_collect_data.py)의 np.concatenate 순서와 100% 일치해야 함
+  // 보통: [Pose, Left_Hand, Right_Hand] 순서입니다.
   return [...pose, ...lh, ...rh];
 }
