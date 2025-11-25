@@ -8,7 +8,7 @@ import { consonants, vowels, numbers, words } from '../data/modelData';
 import { toXY, extractFeatures, extractHolisticFeatures } from '../utils/handUtils';
 import './Study.css';
 
-const API_URL = "http://localhost:8000/predict"; 
+const API_URL = "https://itzel-unaching-unexceptionally.ngrok-free.dev/predict";
 
 const Study = () => {
   // --- 상태 관리 ---
