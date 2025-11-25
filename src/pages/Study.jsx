@@ -21,10 +21,7 @@ const Study = () => {
   // 🕒 턴 방식 상태 관리
   const [phase, setPhase] = useState('idle'); 
   const [timer, setTimer] = useState(0); 
-
-  // ✅ [핵심 수정 1] Stale Closure 방지용 Ref 추가
-  // onResults 함수 안에서 최신 phase 값을 읽기 위함
-  const phaseRef = useRef('idle');
+  const phaseRef = useRef('idle'); // Stale Closure 방지
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -34,10 +31,13 @@ const Study = () => {
   const isPredicting = useRef(false);
   
   const targetLabelRef = useRef(null);
-
-  // 시퀀스 데이터 버퍼
   const sequenceBuffer = useRef([]); 
   const SEQ_LENGTH = 90; 
+
+  // 🎨 UI용 상태 (파이썬 코드의 box_color, display_text 반영)
+  const [uiColor, setUiColor] = useState('rgba(0,0,0,0.5)'); // 기본값
+  const [uiText, setUiText] = useState('');
+  const [progress, setProgress] = useState(0); // 녹화 진행률
 
   // 🌟 탭 데이터 설정
   const currentData = useMemo(() => {
@@ -63,23 +63,26 @@ const Study = () => {
     return label.includes('(') ? label.split('(')[0].trim() : label.trim();
   }, [currentData, currentIndex]);
 
-  // ✅ [핵심 수정 2] phase 상태가 변할 때마다 Ref도 업데이트
+  // phaseRef 동기화
   useEffect(() => {
     phaseRef.current = phase;
   }, [phase]);
 
+  // 문제 변경 시 초기화
   useEffect(() => {
     targetLabelRef.current = currentTargetLabel;
     setIsCorrect(null);
     setPredictionMsg("손을 보여주세요 👋");
+    setProgress(0);
     
     if (isCamOn) setPhase('ready');
   }, [currentTargetLabel]);
 
-  // --- 🔄 턴(Turn) 기반 게임 루프 ---
+  // --- 🔄 턴(Turn) 기반 로직 (파이썬 코드 적극 반영) ---
   useEffect(() => {
     if (!isCamOn) {
         setPhase('idle');
+        setUiText('');
         return;
     }
 
@@ -91,53 +94,74 @@ const Study = () => {
     }
 
     let timeout;
+    let interval;
 
-    // 1. 준비 단계 (1초)
+    // 1. 준비 단계 (Get Ready... 1s)
     if (phase === 'ready') {
-        setPredictionMsg("준비... 1초 뒤 시작!");
-        setTimer(1);
+        setUiColor('rgba(255, 215, 0, 0.8)'); // Yellow (파이썬 box_color)
+        setUiText("Get Ready...");
+        setPredictionMsg("준비하세요!");
+        setProgress(0);
         sequenceBuffer.current = []; 
+        
+        // 1초 카운트다운
+        let count = 1;
+        setTimer(count);
+        interval = setInterval(() => {
+            count -= 0.1;
+            if (count <= 0) clearInterval(interval);
+        }, 100);
+
         timeout = setTimeout(() => {
             setPhase('recording');
-        }, 1000);
+        }, 1000); // 1.0초
     } 
-    // 2. 촬영 단계 (3초)
+    // 2. 촬영 단계 (Recording... 3s)
     else if (phase === 'recording') {
-        setPredictionMsg("🎬 촬영 중! 동작을 보여주세요");
-        setTimer(3);
+        setUiColor('rgba(255, 0, 0, 0.8)'); // Red (파이썬 box_color)
+        setUiText("Recording...");
+        setPredictionMsg("동작을 보여주세요!");
+        
+        // 3초 타이머
         timeout = setTimeout(() => {
             handleRecordingEnd(); 
-        }, 3000);
+        }, 3000); // 3.0초 (seq_length=90 @ 30fps 가정)
     } 
-    // 3. 결과 확인 단계 (3초)
+    // 3. 결과 단계 (Result... 5s)
     else if (phase === 'result') {
-        setTimer(3);
+        // 색상은 결과에 따라 handleRecordingEnd에서 설정됨 (Green/Grey)
+        
+        // ✅ [수정] 파이썬 코드의 RESULT_TIME = 5.0 반영
         timeout = setTimeout(() => {
             if (isCorrect) {
-                 // 정답이면 대기
+                 // 정답이면 대기 (사용자가 넘길 때까지)
             } else {
-                setPhase('ready'); 
+                setPhase('ready'); // 틀리면 다시 준비
             }
-        }, 3000);
+        }, 5000); // 5.0초
     }
+    // 초기 진입
     else if (phase === 'idle') {
         setPhase('ready');
     }
 
-    return () => clearTimeout(timeout);
+    return () => {
+        clearTimeout(timeout);
+        clearInterval(interval);
+    };
   }, [phase, isCamOn, activeTab, isCorrect, currentTargetLabel]);
 
   // --- 촬영 종료 및 데이터 전송 ---
   const handleRecordingEnd = () => {
-    // 🔍 로그: 실제로 데이터가 모였는지 확인
-    console.log("Recording End. Buffer Size:", sequenceBuffer.current.length);
-
     if (sequenceBuffer.current.length === 0) {
-        setPredictionMsg("데이터가 없습니다. (카메라 인식 실패)");
+        setPredictionMsg("데이터가 없습니다.");
+        setUiText("No Data");
+        setUiColor('rgba(128, 128, 128, 0.8)');
         setPhase('result');
         return;
     }
 
+    // 데이터 길이 맞추기 (90개)
     const rawData = sequenceBuffer.current;
     let processedData = [];
 
@@ -151,7 +175,7 @@ const Study = () => {
         }
     }
 
-    setPredictionMsg("분석 중... 🤔");
+    setPredictionMsg("분석 중...");
     predictSign(processedData, 'word', targetLabelRef.current);
     
     setPhase('result');
@@ -166,13 +190,11 @@ const Study = () => {
       const isWordMode = activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current));
 
       if (isWordMode) {
-        console.log("Loading Holistic Model (Turn Based)...");
         detector = new Holistic({
           locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`,
         });
         detector.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
       } else {
-        console.log("Loading Hands Model (Realtime)...");
         detector = new Hands({
           locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
         });
@@ -200,13 +222,17 @@ const Study = () => {
     };
   }, [isCamOn, activeTab, currentTargetLabel]);
 
-  // --- onResults (데이터 수집) ---
+  // --- onResults ---
   const onResults = (results) => {
     if (!canvasRef.current) return;
     const ctx = canvasRef.current.getContext('2d');
     
     ctx.save();
     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    
+    // 🌟 [거울 모드] 좌우 반전
+    ctx.translate(canvasRef.current.width, 0);
+    ctx.scale(-1, 1);
     ctx.drawImage(results.image, 0, 0, canvasRef.current.width, canvasRef.current.height);
 
     if (isCorrect) { ctx.restore(); return; }
@@ -214,18 +240,26 @@ const Study = () => {
     const isWordMode = activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current));
 
     if (isWordMode) {
-        // ✅ [핵심 수정 3] phase 대신 phaseRef.current 사용
         if (phaseRef.current === 'recording') {
             const features = extractHolisticFeatures(results);
             sequenceBuffer.current.push(features);
             
-            // 녹화 중 표시 (빨간 테두리)
+            // 진행률 업데이트 (UI용)
+            // 파이썬 로직: len(sequence) / seq_length
+            const currentLen = sequenceBuffer.current.length;
+            const pct = Math.min(100, Math.round((currentLen / SEQ_LENGTH) * 100));
+            // React 상태 업데이트는 비동기라 렌더링 사이클에 맡김 (성능 고려)
+            // 여기서는 실시간성을 위해 직접 그리지 않고 상태만 업데이트하거나 
+            // 캔버스에 직접 그리는 방식이 좋음. 아래는 상태 업데이트 방식.
+            if (currentLen % 5 === 0) setProgress(pct); 
+            
+            // 녹화 중 테두리 (Red)
             ctx.strokeStyle = "red";
-            ctx.lineWidth = 5;
+            ctx.lineWidth = 10;
             ctx.strokeRect(0, 0, canvasRef.current.width, canvasRef.current.height);
         }
     } else {
-        // 기존 모드
+        // 기존 Hands 모드
         if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
             const now = Date.now();
             if (now - lastPredictionTime.current > 1000 && !isPredicting.current && targetLabelRef.current) {
@@ -239,7 +273,7 @@ const Study = () => {
     ctx.restore();
   };
 
-  // --- 예측 요청 함수 ---
+  // --- 예측 요청 ---
   const predictSign = async (features, modelKey, expectedLabel) => {
     if (isPredicting.current) return;
     try {
@@ -260,9 +294,18 @@ const Study = () => {
 
         if (predicted === target) {
           setPredictionMsg(`정답입니다! 🎉 (${predicted})`);
+          setUiText(`${predicted.toUpperCase()} !!`);
+          setUiColor('rgba(0, 255, 0, 0.8)'); // Green
           setIsCorrect(true);
         } else {
           setPredictionMsg(`틀렸습니다 (인식: ${predicted})`);
+          if (predicted === 'standby') {
+             setUiText("STANDBY (대기)");
+             setUiColor('rgba(128, 128, 128, 0.8)'); // Grey
+          } else {
+             setUiText(`${predicted.toUpperCase()} !!`);
+             setUiColor('rgba(255, 0, 0, 0.8)'); // Red (오답 표시용, 파이썬엔 없지만 추가)
+          }
           setIsCorrect(false);
         }
       }
@@ -302,18 +345,32 @@ const Study = () => {
              <div className="card-text">{currentData[currentIndex]?.label}</div>
           </div>
           <div className="study-card webcam-card">
-            <div className="card-img-wrapper">
+            <div className="card-img-wrapper" style={{ position: 'relative' }}>
                <video ref={videoRef} style={{display:'none'}}></video>
                <canvas ref={canvasRef} className="output_canvas" width={640} height={480}></canvas>
                
-               {isCamOn && (activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current))) && (
-                 <div style={{
-                    position: 'absolute', top: 10, right: 10, 
-                    backgroundColor: phase === 'recording' ? 'red' : 'rgba(0,0,0,0.5)', 
-                    color: 'white', padding: '5px 10px', borderRadius: 5, fontWeight: 'bold'
-                 }}>
-                    {phase === 'ready' ? '준비 (1s)' : phase === 'recording' ? 'REC ● (3s)' : '결과 확인'}
-                 </div>
+               {/* 🎨 파이썬 스타일 UI 오버레이 */}
+               {isCamOn && (activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current))) && phase !== 'idle' && (
+                 <>
+                   {/* 상단 박스 */}
+                   <div style={{
+                      position: 'absolute', top: 0, left: 0, width: '100%', height: '60px',
+                      backgroundColor: uiColor, display: 'flex', alignItems: 'center', paddingLeft: '20px',
+                      transition: 'background-color 0.3s'
+                   }}>
+                      <span style={{ color: 'white', fontSize: '1.5rem', fontWeight: 'bold', textShadow: '1px 1px 2px black' }}>
+                        {phase === 'recording' ? `${uiText} ${progress}%` : uiText}
+                      </span>
+                   </div>
+
+                   {/* 진행률 바 (녹화 중일 때) */}
+                   {phase === 'recording' && (
+                     <div style={{
+                       position: 'absolute', top: '55px', left: 0, height: '5px',
+                       width: `${progress}%`, backgroundColor: 'white', transition: 'width 0.1s linear'
+                     }}></div>
+                   )}
+                 </>
                )}
             </div>
             <div className={`card-text result ${isCorrect === true ? 'success' : isCorrect === false ? 'fail' : ''}`}>
