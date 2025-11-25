@@ -92,3 +92,26 @@ export function extractFeatures(coords) {
 
   return features; // 총 22개
 }
+
+// ... (기존 extractFeatures 등 위쪽 코드 유지) ...
+
+// ✅ [추가] Holistic 모델용 데이터 추출 함수 (Python 코드 1_collect_data.py와 동일 로직)
+export function extractHolisticFeatures(results) {
+  // 1. Pose (33개 포인트 * 4값(x,y,z,vis)) = 132개
+  const pose = results.poseLandmarks 
+    ? results.poseLandmarks.flatMap(p => [p.x, p.y, p.z, p.visibility])
+    : new Array(33 * 4).fill(0);
+
+  // 2. Left Hand (21개 포인트 * 3값(x,y,z)) = 63개
+  const lh = results.leftHandLandmarks
+    ? results.leftHandLandmarks.flatMap(p => [p.x, p.y, p.z])
+    : new Array(21 * 3).fill(0);
+
+  // 3. Right Hand (21개 포인트 * 3값(x,y,z)) = 63개
+  const rh = results.rightHandLandmarks
+    ? results.rightHandLandmarks.flatMap(p => [p.x, p.y, p.z])
+    : new Array(21 * 3).fill(0);
+
+  // 순서대로 합치기: Pose + Left + Right = 258개
+  return [...pose, ...lh, ...rh];
+}

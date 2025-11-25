@@ -1,11 +1,16 @@
+// src/pages/Study.jsx
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Hands } from '@mediapipe/hands';
+import { Holistic } from '@mediapipe/holistic'; // ✅ [추가] 몸 전체 인식 모델
 import { Camera } from '@mediapipe/camera_utils';
 
-import { consonants, vowels, numbers } from '../data/modelData'; 
-import { toXY, extractFeatures } from '../utils/handUtils';
+// ✅ [추가] words 데이터 import
+import { consonants, vowels, numbers, words } from '../data/modelData'; 
+// ✅ [추가] extractHolisticFeatures 함수 import
+import { toXY, extractFeatures, extractHolisticFeatures } from '../utils/handUtils';
 import './Study.css';
 
+// 로컬 파이썬 서버 주소 (ngrok 사용 시 해당 주소로 변경 필요)
 const API_URL = "https://itzel-unaching-unexceptionally.ngrok-free.dev/predict";
 
 const Study = () => {
@@ -19,20 +24,27 @@ const Study = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const cameraRef = useRef(null);
+  
   const lastPredictionTime = useRef(0);
   const isPredicting = useRef(false);
-
-  // 🛠️ [핵심 1] Stale Closure 방지용 Ref (최신 정답 참조)
+  
+  // 🛠️ Stale Closure 방지용 Ref (최신 정답 참조)
   const targetLabelRef = useRef(null);
+
+  // ✅ [추가] 시퀀스 데이터 버퍼 (단어 모델용 90프레임)
+  const sequenceBuffer = useRef([]); 
+  const SEQ_LENGTH = 90; 
 
   // 🌟 탭 데이터 설정
   const currentData = useMemo(() => {
     if (activeTab === 'consonants') return consonants;
     if (activeTab === 'vowels') return vowels;
     if (activeTab === 'numbers') return numbers;
+    if (activeTab === 'words') return words; // ✅ 단어 데이터 반환
     
     if (activeTab === 'all') {
-      const allData = [...consonants, ...vowels, ...numbers];
+      const allData = [...consonants, ...vowels, ...numbers, ...words];
+      // 랜덤 섞기
       for (let i = allData.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [allData[i], allData[j]] = [allData[j], allData[i]];
@@ -49,35 +61,56 @@ const Study = () => {
     return label.includes('(') ? label.split('(')[0].trim() : label.trim();
   }, [currentData, currentIndex]);
 
-  // 정답이 바뀌면 Ref 업데이트
+  // 정답이 바뀌면 Ref 업데이트 및 상태 초기화
   useEffect(() => {
     targetLabelRef.current = currentTargetLabel;
+    sequenceBuffer.current = []; // 문제 바뀌면 버퍼 비우기
+    setIsCorrect(null);
+    setPredictionMsg("손을 보여주세요 👋");
   }, [currentTargetLabel]);
 
-  // --- MediaPipe 설정 ---
+  // --- MediaPipe 설정 (Hands & Holistic 분기 처리) ---
   useEffect(() => {
-    let hands = null;
+    let detector = null;
     let camera = null;
 
     if (isCamOn) {
-      hands = new Hands({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
-      });
+      // ✅ 현재 풀어야 할 문제가 '단어'인지 확인
+      const isWordMode = activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current));
 
-      hands.setOptions({
-        maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5,
-      });
+      if (isWordMode) {
+        // 1. [Holistic 모드] 단어 연습용 (몸+손 전체)
+        console.log("Loading Holistic Model...");
+        detector = new Holistic({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`,
+        });
+        detector.setOptions({
+          modelComplexity: 1,
+          smoothLandmarks: true,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        });
+      } else {
+        // 2. [Hands 모드] 자음/모음/숫자 연습용 (손만 인식 - 기존 유지)
+        console.log("Loading Hands Model...");
+        detector = new Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+        });
+        detector.setOptions({
+          maxNumHands: 1,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        });
+      }
 
-      hands.onResults(onResults);
+      detector.onResults(onResults);
 
       if (videoRef.current) {
         camera = new Camera(videoRef.current, {
           onFrame: async () => {
             if (isCamOn && videoRef.current) {
-              await hands.send({ image: videoRef.current });
+              await detector.send({ image: videoRef.current });
             }
           },
           width: 640,
@@ -97,9 +130,9 @@ const Study = () => {
         cameraRef.current.stop();
         cameraRef.current = null;
       }
-      if (hands) hands.close();
+      if (detector) detector.close();
     };
-  }, [isCamOn]);
+  }, [isCamOn, activeTab, currentTargetLabel]); // 문제가 바뀔 때(all 탭) 모델 전환을 위해 currentTargetLabel 의존성 추가
 
   // --- 결과 처리 ---
   const onResults = (results) => {
@@ -110,45 +143,58 @@ const Study = () => {
     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     ctx.drawImage(results.image, 0, 0, canvasRef.current.width, canvasRef.current.height);
     
-    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-      const landmarks = results.multiHandLandmarks[0];
-      
-      // 정답을 맞췄다면 API 호출 중단
-      if (isCorrect) {
-        ctx.restore();
-        return; 
-      }
+    // 정답을 맞췄다면 중단
+    if (isCorrect) {
+      ctx.restore();
+      return; 
+    }
 
-      const now = Date.now();
-      // targetLabelRef.current를 사용하여 항상 최신 정답 확인
-      if (now - lastPredictionTime.current > 1000 && !isPredicting.current && targetLabelRef.current) {
-        lastPredictionTime.current = now;
-        
-        const coords = toXY(landmarks);
-        const features = extractFeatures(coords);
-        
-        // 🔥 [수정됨] 탭(activeTab)이 아니라, '정답 라벨(글자)'이 숫자인지 확인하여 모델 결정
-        // 정규식 설명: 문자열의 처음(^)부터 끝($)까지 숫자([0-9])로만 되어있는지 확인
-        const isDigit = /^[0-9]+$/.test(targetLabelRef.current);
-        const modelKey = isDigit ? 'digit' : 'hangul';
-        
-        // predictSign 함수 호출
-        predictSign(features, modelKey, targetLabelRef.current);
-      }
+    // 현재 모드 확인
+    const isWordMode = activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current));
+
+    if (isWordMode) {
+        // 🟢 [단어 모드] Holistic 데이터 수집 (90프레임)
+        // extractHolisticFeatures 함수가 handUtils.js에 있어야 함
+        const features = extractHolisticFeatures(results); 
+        sequenceBuffer.current.push(features);
+
+        // 버퍼 크기 유지 (최신 90개)
+        if (sequenceBuffer.current.length > SEQ_LENGTH) {
+            sequenceBuffer.current.shift();
+        }
+
+        // 90개가 찼고 예측 중이 아니면 전송
+        if (sequenceBuffer.current.length === SEQ_LENGTH && !isPredicting.current) {
+             // 0.5초 간격으로 제한
+             if (Date.now() - lastPredictionTime.current > 500) {
+                 lastPredictionTime.current = Date.now();
+                 predictSign(sequenceBuffer.current, 'word', targetLabelRef.current);
+             }
+        }
+    } else {
+        // 🔵 [기존 모드] Hands 데이터 수집 (1프레임)
+        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+            const now = Date.now();
+            if (now - lastPredictionTime.current > 1000 && !isPredicting.current && targetLabelRef.current) {
+                lastPredictionTime.current = now;
+                
+                const features = extractFeatures(toXY(results.multiHandLandmarks[0]));
+                const modelKey = /^[0-9]+$/.test(targetLabelRef.current) ? 'digit' : 'hangul';
+                
+                predictSign(features, modelKey, targetLabelRef.current);
+            }
+        }
     }
     ctx.restore();
   };
 
-  // --- 서버 예측 함수 (수정됨) ---
+  // --- 서버 예측 함수 ---
   const predictSign = async (features, modelKey, expectedLabel) => {
     if (isPredicting.current) return;
 
     try {
       isPredicting.current = true;
       
-      // 🗑️ [삭제됨] "분석 중..." 메시지 설정을 제거하여 깜빡임 방지
-      // setPredictionMsg("분석 중... 🤔"); 
-
       const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -158,15 +204,16 @@ const Study = () => {
       if (response.ok) {
         const data = await response.json();
         
-        // NFKC 정규화
         const predicted = String(data.label).trim().normalize("NFKC");
         const target = String(expectedLabel).trim().normalize("NFKC");
+        const confidence = data.confidence || 0;
 
-        console.log(`[판정] AI: ${predicted} vs 정답: ${target}`);
+        console.log(`[판정] 모델:${modelKey} | AI:${predicted} (${(confidence*100).toFixed(1)}%) vs 정답:${target}`);
 
         if (predicted === target) {
           setPredictionMsg(`정확해요! 🎉 (${predicted})`);
           setIsCorrect(true);
+          sequenceBuffer.current = []; // 버퍼 초기화
         } else {
           setPredictionMsg(`다시 해보세요 (인식: ${predicted})`);
           setIsCorrect(false);
@@ -174,8 +221,6 @@ const Study = () => {
       }
     } catch (error) {
       console.error(error);
-      // 에러 시에만 메시지 표시 (선택 사항)
-      // setPredictionMsg("연결 실패 ⚠️"); 
     } finally {
       isPredicting.current = false; 
     }
@@ -186,19 +231,18 @@ const Study = () => {
     setActiveTab(tab);
     setCurrentIndex(0);
     setIsCorrect(null);
+    sequenceBuffer.current = [];
     setPredictionMsg("손을 보여주세요 👋");
   };
 
   const handlePrev = () => {
     setCurrentIndex((prev) => (prev === 0 ? currentData.length - 1 : prev - 1));
-    setIsCorrect(null);
-    setPredictionMsg("손을 보여주세요 👋");
+    sequenceBuffer.current = [];
   };
 
   const handleNext = () => {
     setCurrentIndex((prev) => (prev === currentData.length - 1 ? 0 : prev + 1));
-    setIsCorrect(null);
-    setPredictionMsg("손을 보여주세요 👋");
+    sequenceBuffer.current = [];
   };
 
   return (
@@ -207,7 +251,7 @@ const Study = () => {
       <p className="subtitle">카테고리를 선택하고 따라해보세요!</p>
 
       <nav className="study-tabs">
-        {['consonants', 'vowels', 'numbers', 'all'].map(tab => (
+        {['consonants', 'vowels', 'numbers', 'words', 'all'].map(tab => (
           <button 
             key={tab}
             className={`tab-button ${activeTab === tab ? 'active' : ''}`}
@@ -215,7 +259,8 @@ const Study = () => {
           >
             {tab === 'consonants' ? '자음 연습' : 
              tab === 'vowels' ? '모음 연습' : 
-             tab === 'numbers' ? '숫자 연습' : '전체 연습'}
+             tab === 'numbers' ? '숫자 연습' : 
+             tab === 'words' ? '단어 연습' : '전체 연습'}
           </button>
         ))}
       </nav>
