@@ -117,5 +117,5 @@ export function extractHolisticFeatures(results) {
 
   // 3. 순서 조합: Python 코드(1_collect_data.py)의 np.concatenate 순서와 100% 일치해야 함
   // 보통: [Pose, Left_Hand, Right_Hand] 순서입니다.
-  return [...pose, ...lh, ...rh];
+  return [...pose, ...rh, ...lh];
 }
