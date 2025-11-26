@@ -3,11 +3,12 @@ import { Hands } from '@mediapipe/hands';
 import { Holistic } from '@mediapipe/holistic'; 
 import { Camera } from '@mediapipe/camera_utils';
 
+// 데이터 및 유틸리티 import
 import { consonants, vowels, numbers, words } from '../data/modelData'; 
 import { toXY, extractFeatures, extractHolisticFeatures } from '../utils/handUtils';
 import './Study.css';
 
-// 🟢 배포 주소 확인
+// 🟢 배포된 ngrok 주소 확인 필수!
 const API_URL = "http://localhost:8000/predict"; 
 
 const Study = () => {
@@ -188,7 +189,7 @@ const Study = () => {
           setUiColor('rgba(46, 125, 50, 0.9)'); 
           setIsCorrect(true);
         } else {
-          setPredictionMsg(`다시 해보세요 (인식: ${predicted})`);
+          setPredictionMsg(`틀렸습니다 (인식: ${predicted})`);
           if (predicted === 'standby' || predicted === '대기') {
              setUiText("STANDBY (대기)");
              setUiColor('rgba(128, 128, 128, 0.8)'); 
@@ -270,7 +271,7 @@ const Study = () => {
     ctx.save();
     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     
-    // CSS로 좌우반전 처리됨 (여기선 정방향 그리기)
+    // CSS로 좌우반전 처리됨 (정방향 그리기)
     ctx.drawImage(results.image, 0, 0, canvasRef.current.width, canvasRef.current.height);
 
     if (isCorrect) { ctx.restore(); return; }
@@ -286,7 +287,6 @@ const Study = () => {
             const pct = Math.min(100, Math.floor((currentLen / SEQ_LENGTH) * 100));
             if (currentLen % 5 === 0) setProgress(pct); 
 
-            // 녹화 중 테두리 (UI와 통일된 파란색)
             ctx.strokeStyle = "rgba(30, 144, 255, 0.8)";
             ctx.lineWidth = 10;
             ctx.strokeRect(0, 0, canvasRef.current.width, canvasRef.current.height);
@@ -330,34 +330,53 @@ const Study = () => {
         <button className="nav-btn prev" onClick={handlePrev}>◀</button>
         
         <div className="display-area">
-          {/* 🌟 [수정] 왼쪽 카드: 비디오가 있으면 비디오 재생, 없으면 이미지 표시 */}
+          {/* 🌟 왼쪽 카드: 비디오/이미지 + 출처 표시 */}
           <div className="study-card">
-             <div className="card-img-wrapper">
+             <div className="card-img-wrapper" style={{ position: 'relative' }}>
                 {currentItem && (
-                  currentItem.video ? (
-                    <video 
-                      src={currentItem.video} 
-                      autoPlay 
-                      loop 
-                      muted 
-                      playsInline 
-                      controls // 사용자가 조절 가능하게 (원치 않으면 제거)
-                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                    />
-                  ) : (
-                    <img src={currentItem.img} alt="문제" />
-                  )
+                  <>
+                    {currentItem.video ? (
+                      <video 
+                        src={currentItem.video} 
+                        autoPlay loop muted playsInline controls 
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                      />
+                    ) : (
+                      <img src={currentItem.img} alt="문제" />
+                    )}
+
+                    {/* ✅ [추가됨] 출처 오버레이 (비디오일 때만) */}
+                    {currentItem.video && (
+                      <span style={{
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        fontSize: '0.75rem',
+                        color: '#666',
+                        backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        pointerEvents: 'none', // 클릭 통과
+                        zIndex: 10,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        fontWeight: 'bold'
+                      }}>
+                        출처: 국립국어원 한국수어사전
+                      </span>
+                    )}
+                  </>
                 )}
              </div>
              <div className="card-text">{currentItem?.label}</div>
           </div>
 
+          {/* 오른쪽 카드: 웹캠 */}
           <div className="study-card webcam-card">
             <div className="card-img-wrapper" style={{ position: 'relative' }}>
                <video ref={videoRef} style={{display:'none'}}></video>
                <canvas ref={canvasRef} className="output_canvas" width={640} height={480}></canvas>
                
-               {/* 🎨 UI 오버레이 */}
+               {/* UI 오버레이 */}
                {isCamOn && phase !== 'idle' && (activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current))) && (
                  <>
                    <div style={{
