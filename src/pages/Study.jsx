@@ -3,13 +3,12 @@ import { Hands } from '@mediapipe/hands';
 import { Holistic } from '@mediapipe/holistic'; 
 import { Camera } from '@mediapipe/camera_utils';
 
-// 데이터 및 유틸리티 import
 import { consonants, vowels, numbers, words } from '../data/modelData'; 
 import { toXY, extractFeatures, extractHolisticFeatures } from '../utils/handUtils';
 import './Study.css';
 
-// 🟢 배포 환경에 맞는 API 주소 확인 필요 (ngrok https 주소 등)
-const API_URL = "https://itzel-unaching-unexceptionally.ngrok-free.dev/predict";
+// 🟢 배포 주소 확인
+const API_URL = "http://localhost:8000/predict"; 
 
 const Study = () => {
   // --- 상태 관리 ---
@@ -96,9 +95,9 @@ const Study = () => {
 
     let timeout;
 
-    // 1. 준비 단계 (Get Ready... 1s)
+    // 1. 준비 단계 (1s)
     if (phase === 'ready') {
-        setUiColor('rgba(255, 215, 0, 0.8)'); // 노란색 (유지)
+        setUiColor('rgba(255, 215, 0, 0.8)'); 
         setUiText("Get Ready...");
         setPredictionMsg("준비하세요!");
         setProgress(0);
@@ -108,9 +107,8 @@ const Study = () => {
             setPhase('recording');
         }, 1000); 
     } 
-    // 2. 촬영 단계 (Recording... 3s)
+    // 2. 촬영 단계 (3s)
     else if (phase === 'recording') {
-        // 🎨 [변경] 빨간색 -> 밝은 파란색 (Dodger Blue)
         setUiColor('rgba(30, 144, 255, 0.8)'); 
         setUiText("Recording...");
         setPredictionMsg("동작을 보여주세요!");
@@ -119,11 +117,11 @@ const Study = () => {
             handleRecordingEnd(); 
         }, 3000); 
     } 
-    // 3. 결과 단계 (Result... 5s)
+    // 3. 결과 단계 (5s)
     else if (phase === 'result') {
         timeout = setTimeout(() => {
             if (isCorrect) {
-                 // 정답 유지
+                 // 정답 시 대기
             } else {
                 setPhase('ready'); 
             }
@@ -139,7 +137,7 @@ const Study = () => {
   // --- 촬영 종료 및 데이터 전송 ---
   const handleRecordingEnd = () => {
     if (sequenceBuffer.current.length === 0) {
-        setPredictionMsg("데이터가 없습니다. (인식 실패)");
+        setPredictionMsg("데이터가 없습니다.");
         setUiText("No Data");
         setUiColor('rgba(128, 128, 128, 0.8)');
         setPhase('result');
@@ -187,18 +185,16 @@ const Study = () => {
         if (predicted === target) {
           setPredictionMsg(`정답입니다! 🎉 (${predicted})`);
           setUiText(`${predicted.toUpperCase()} !!`);
-          setUiColor('rgba(0, 255, 0, 0.8)'); // 초록색 (유지)
+          setUiColor('rgba(46, 125, 50, 0.9)'); 
           setIsCorrect(true);
         } else {
-          setPredictionMsg(`틀렸습니다 (인식: ${predicted})`);
+          setPredictionMsg(`다시 해보세요 (인식: ${predicted})`);
           if (predicted === 'standby' || predicted === '대기') {
              setUiText("STANDBY (대기)");
-             setUiColor('rgba(128, 128, 128, 0.8)'); // 회색 (유지)
+             setUiColor('rgba(128, 128, 128, 0.8)'); 
           } else {
              setUiText(`${predicted.toUpperCase()} !!`);
-             // 오답일 때도 파란색 계열로 통일하고 싶으시면 아래 주석을 해제하고 위를 주석 처리하세요.
-             setUiColor('rgba(255, 99, 71, 0.8)'); // 토마토색 (오답 표시용, 유지)
-             // setUiColor('rgba(30, 144, 255, 0.8)'); // 녹화 색상과 통일
+             setUiColor('rgba(255, 140, 0, 0.8)'); 
           }
           setIsCorrect(false);
         }
@@ -222,7 +218,6 @@ const Study = () => {
       const isWordMode = activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current));
 
       if (isWordMode) {
-        console.log("Loading Holistic Model...");
         detector = new Holistic({
           locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`,
         });
@@ -233,7 +228,6 @@ const Study = () => {
           minTrackingConfidence: 0.5,
         });
       } else {
-        console.log("Loading Hands Model...");
         detector = new Hands({
           locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
         });
@@ -268,7 +262,7 @@ const Study = () => {
     };
   }, [isCamOn, activeTab, currentTargetLabel]);
 
-  // --- onResults (화면 그리기 및 데이터 수집) ---
+  // --- onResults ---
   const onResults = (results) => {
     if (!canvasRef.current) return;
     const ctx = canvasRef.current.getContext('2d');
@@ -276,32 +270,28 @@ const Study = () => {
     ctx.save();
     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     
-    // 🔄 [변경] 캔버스 좌우 반전 (거울 모드 적용)
-    // 캔버스의 원점을 오른쪽 끝으로 이동시킨 후, X축을 -1배하여 뒤집습니다.
-    ctx.translate(canvasRef.current.width, 0);
-    ctx.scale(-1, 1);
-
-    // 반전된 상태에서 이미지 그리기
+    // CSS로 좌우반전 처리됨 (여기선 정방향 그리기)
     ctx.drawImage(results.image, 0, 0, canvasRef.current.width, canvasRef.current.height);
 
-    // 정답을 맞춘 상태면 그리기만 하고, 캔버스 상태를 복구한 뒤 종료
     if (isCorrect) { ctx.restore(); return; }
 
     const isWordMode = activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current));
 
     if (isWordMode) {
         if (phaseRef.current === 'recording') {
-            // 주의: 데이터 추출은 반전된 화면과 상관없이 원본 results를 사용합니다.
-            // (handUtils.js에서 이미 데이터상의 좌우 반전 처리가 되어 있음)
             const features = extractHolisticFeatures(results);
             sequenceBuffer.current.push(features);
             
             const currentLen = sequenceBuffer.current.length;
             const pct = Math.min(100, Math.floor((currentLen / SEQ_LENGTH) * 100));
             if (currentLen % 5 === 0) setProgress(pct); 
+
+            // 녹화 중 테두리 (UI와 통일된 파란색)
+            ctx.strokeStyle = "rgba(30, 144, 255, 0.8)";
+            ctx.lineWidth = 10;
+            ctx.strokeRect(0, 0, canvasRef.current.width, canvasRef.current.height);
         }
     } else {
-        // [기존 모드] 실시간
         if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
             const now = Date.now();
             if (now - lastPredictionTime.current > 1000 && !isPredicting.current && targetLabelRef.current) {
@@ -312,7 +302,6 @@ const Study = () => {
             }
         }
     }
-    // 🔄 캔버스 상태 복구 (필수)
     ctx.restore();
   };
 
@@ -320,6 +309,8 @@ const Study = () => {
   const handleTabChange = (tab) => { setActiveTab(tab); setCurrentIndex(0); setPhase('idle'); };
   const handlePrev = () => { setCurrentIndex(prev => prev === 0 ? currentData.length - 1 : prev - 1); setPhase('ready'); };
   const handleNext = () => { setCurrentIndex(prev => prev === currentData.length - 1 ? 0 : prev + 1); setPhase('ready'); };
+
+  const currentItem = currentData[currentIndex];
 
   return (
     <div className="study-container">
@@ -337,19 +328,36 @@ const Study = () => {
 
       <div className="study-content-wrapper">
         <button className="nav-btn prev" onClick={handlePrev}>◀</button>
+        
         <div className="display-area">
+          {/* 🌟 [수정] 왼쪽 카드: 비디오가 있으면 비디오 재생, 없으면 이미지 표시 */}
           <div className="study-card">
              <div className="card-img-wrapper">
-                {currentData[currentIndex] && <img src={currentData[currentIndex].img} alt="문제" />}
+                {currentItem && (
+                  currentItem.video ? (
+                    <video 
+                      src={currentItem.video} 
+                      autoPlay 
+                      loop 
+                      muted 
+                      playsInline 
+                      controls // 사용자가 조절 가능하게 (원치 않으면 제거)
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    />
+                  ) : (
+                    <img src={currentItem.img} alt="문제" />
+                  )
+                )}
              </div>
-             <div className="card-text">{currentData[currentIndex]?.label}</div>
+             <div className="card-text">{currentItem?.label}</div>
           </div>
+
           <div className="study-card webcam-card">
             <div className="card-img-wrapper" style={{ position: 'relative' }}>
                <video ref={videoRef} style={{display:'none'}}></video>
                <canvas ref={canvasRef} className="output_canvas" width={640} height={480}></canvas>
                
-               {/* UI 오버레이 */}
+               {/* 🎨 UI 오버레이 */}
                {isCamOn && phase !== 'idle' && (activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current))) && (
                  <>
                    <div style={{

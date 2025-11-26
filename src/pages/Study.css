@@ -63,7 +63,7 @@
   border-radius: 30px;
   cursor: pointer;
   margin-bottom: 40px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 .cam-toggle-btn.on {
   background-color: #f44336; /* 끄기 상태일 땐 빨간색 */
@@ -103,7 +103,7 @@
   border: 2px solid #eee;
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
 }
 
 .card-img-wrapper {
@@ -124,10 +124,20 @@
 }
 
 .output_canvas {
+  transform: scaleX(-1);
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scaleX(-1); /* 거울 모드 */
+}
+.card-text.fail {
+  color: #ff9800; /* 부드러운 주황색 (Warning 느낌) */
+  /* 또는 */
+  /* color: #555; */ /* 차분한 회색을 원하시면 이걸로 */
+}
+
+/* 성공일 때: 초록색 -> 더 선명한 초록 */
+.card-text.success {
+  color: #2e7d32;
 }
 .output_canvas.hidden {
   display: none;
@@ -176,11 +186,11 @@
     padding: 8px 15px;
     font-size: 1rem;
   }
-  
+
   .cam-toggle-btn {
     padding: 10px 20px;
     font-size: 1rem;
-    width: 100%;     /* 모바일에서는 버튼을 꽉 차게 */
+    width: 100%; /* 모바일에서는 버튼을 꽉 차게 */
     max-width: 300px;
     margin-bottom: 20px;
   }
@@ -193,7 +203,7 @@
 
   /* 1. 메인 디스플레이 영역을 최상단으로 (순서 1) */
   .display-area {
-    order: 1; 
+    order: 1;
     width: 100%; /* 전체 너비 차지 */
     gap: 20px;
   }
@@ -207,7 +217,7 @@
     padding: 10px 0;
     font-size: 2rem;
   }
-  
+
   .nav-btn:active {
     background-color: #e0e0e0; /* 눌렀을 때 효과 */
   }
@@ -222,7 +232,7 @@
   .card-img-wrapper {
     height: 250px; /* 이미지 영역 높이 축소 (340px -> 250px) */
   }
-  
+
   /* 캔버스(웹캠) 비율 유지하며 꽉 차게 */
   .output_canvas {
     width: 100%;
@@ -245,7 +255,7 @@
 @media (max-width: 480px) {
   /* 카드가 화면에 꽉 차도록 */
   .card-img-wrapper {
-    height: 220px; 
+    height: 220px;
   }
 
   /* 탭 버튼을 더 작게 */

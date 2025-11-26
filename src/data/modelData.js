@@ -54,9 +54,25 @@ export const numbers = [
   { label: "10 (열)", img: "/images/fingernumber/10.jpg" },
 ];
 export const words = [
-  { label: '안녕', img: '/images/words/hello.jpg' },        // 이미지 파일 준비 필요
-  { label: '감사', img: '/images/words/thankyou.jpg' },     // 이미지 파일 준비 필요
-  { label: '크리스마스', img: '/images/words/christmas.jpg' }, // 이미지 파일 준비 필요
-  // standby는 연습 대상이 아니라면 제외하거나, 연습하고 싶다면 추가
-  { label: 'standby', img: '/images/words/standby.jpg' } 
+  { 
+    label: '안녕', 
+    img: '/images/words/hello.jpg', 
+    video: '/video/hello.mp4' // 🌟 추가됨
+  },
+  { 
+    label: '감사', 
+    img: '/images/words/thankyou.jpg', 
+    video: '/video/thanks.mp4' // 🌟 추가됨
+  },
+  { 
+    label: '크리스마스', 
+    img: '/images/words/christmas.jpg', 
+    video: '/video/christmas.mp4' // 🌟 추가됨
+  },
+  { 
+    label: 'standby', 
+    img: '/images/words/standby.jpg',
+    // standby는 비디오가 없다면 img만 남겨둬도 됩니다.
+    // video: '/video/standby.mp4' 
+  } 
 ];
