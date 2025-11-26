@@ -330,7 +330,7 @@ const Study = () => {
         <button className="nav-btn prev" onClick={handlePrev}>◀</button>
         
         <div className="display-area">
-          {/* 🌟 왼쪽 카드: 비디오/이미지 + 출처 표시 */}
+          {/* 왼쪽 카드: 비디오/이미지 + 출처 표시 */}
           <div className="study-card">
              <div className="card-img-wrapper" style={{ position: 'relative' }}>
                 {currentItem && (
@@ -339,24 +339,29 @@ const Study = () => {
                       <video 
                         src={currentItem.video} 
                         autoPlay loop muted playsInline controls 
-                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: 'contain',
+                          transform: 'scaleX(-1)' // 🌟 [추가됨] 비디오 좌우 반전
+                        }}
                       />
                     ) : (
                       <img src={currentItem.img} alt="문제" />
                     )}
 
-                    {/* ✅ [추가됨] 출처 오버레이 (비디오일 때만) */}
+                    {/* 출처 오버레이 (비디오일 때만) */}
                     {currentItem.video && (
                       <span style={{
                         position: 'absolute',
                         top: '10px',
-                        right: '10px',
+                        right: '10px', // 비디오가 반전되어도 이 오버레이는 그대로 우측 상단 유지
                         fontSize: '0.75rem',
                         color: '#666',
                         backgroundColor: 'rgba(255, 255, 255, 0.85)',
                         padding: '4px 8px',
                         borderRadius: '6px',
-                        pointerEvents: 'none', // 클릭 통과
+                        pointerEvents: 'none', 
                         zIndex: 10,
                         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                         fontWeight: 'bold'
