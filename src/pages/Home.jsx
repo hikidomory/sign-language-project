@@ -3,7 +3,7 @@ import React from "react";
 import Slider from "react-slick";
 import { Link } from "react-router-dom";
 import BookSlider from "../components/BookSlider";
-import RelatedSites from '../components/RelatedSites';
+import RelatedSites from "../components/RelatedSites";
 
 // 슬라이더 라이브러리 필수 CSS (import 순서 중요)
 import "slick-carousel/slick/slick.css";
@@ -58,6 +58,9 @@ const Home = () => {
           </Link>
           <Link to="/study" className="studyroom_content">
             숫자 연습
+          </Link>
+          <Link to="/study" className="studyroom_content">
+            단어 연습
           </Link>
           <Link to="/study" className="studyroom_content">
             전체 연습
