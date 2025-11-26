@@ -318,7 +318,7 @@ const Study = () => {
       <nav className="study-tabs">
         {['consonants', 'vowels', 'numbers', 'words', 'all'].map(tab => (
           <button key={tab} className={`tab-button ${activeTab === tab ? 'active' : ''}`} onClick={() => handleTabChange(tab)}>
-            {tab === 'consonants' ? '자음' : tab === 'vowels' ? '모음' : tab === 'numbers' ? '숫자' : tab === 'words' ? '단어' : '전체'}
+            {tab === 'consonants' ? '자음 연습' : tab === 'vowels' ? '모음 연습' : tab === 'numbers' ? '숫자 연습' : tab === 'words' ? '단어 연습' : '전체 연습'}
           </button>
         ))}
       </nav>
