@@ -1,9 +1,9 @@
-// src/pages/Study.jsx
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Hands } from '@mediapipe/hands';
 import { Holistic } from '@mediapipe/holistic'; 
 import { Camera } from '@mediapipe/camera_utils';
 
+// 데이터 및 유틸리티 import
 import { consonants, vowels, numbers, words } from '../data/modelData'; 
 import { toXY, extractFeatures, extractHolisticFeatures } from '../utils/handUtils';
 import './Study.css';
@@ -18,11 +18,16 @@ const Study = () => {
   const [predictionMsg, setPredictionMsg] = useState("카메라를 켜주세요");
   const [isCorrect, setIsCorrect] = useState(null);
 
-  // 🕒 턴 방식 상태 관리
+  // 🕒 턴 방식 상태 관리 (idle -> ready -> recording -> result)
   const [phase, setPhase] = useState('idle'); 
-  const [timer, setTimer] = useState(0); 
-  const phaseRef = useRef('idle'); // Stale Closure 방지
+  const phaseRef = useRef('idle'); // onResults에서 최신 상태 참조용
 
+  // 🎨 UI 오버레이 상태 (파이썬 코드 스타일)
+  const [uiText, setUiText] = useState('');
+  const [uiColor, setUiColor] = useState('rgba(0,0,0,0.5)');
+  const [progress, setProgress] = useState(0);
+
+  // Refs
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const cameraRef = useRef(null);
@@ -31,13 +36,8 @@ const Study = () => {
   const isPredicting = useRef(false);
   
   const targetLabelRef = useRef(null);
-  const sequenceBuffer = useRef([]); 
+  const sequenceBuffer = useRef([]); // 90프레임 데이터 저장소
   const SEQ_LENGTH = 90; 
-
-  // 🎨 UI용 상태 (파이썬 코드의 box_color, display_text 반영)
-  const [uiColor, setUiColor] = useState('rgba(0,0,0,0.5)'); // 기본값
-  const [uiText, setUiText] = useState('');
-  const [progress, setProgress] = useState(0); // 녹화 진행률
 
   // 🌟 탭 데이터 설정
   const currentData = useMemo(() => {
@@ -48,6 +48,7 @@ const Study = () => {
     
     if (activeTab === 'all') {
       const allData = [...consonants, ...vowels, ...numbers, ...words];
+      // 랜덤 섞기
       for (let i = allData.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [allData[i], allData[j]] = [allData[j], allData[i]];
@@ -57,28 +58,32 @@ const Study = () => {
     return [];
   }, [activeTab]);
 
+  // 현재 정답 라벨
   const currentTargetLabel = useMemo(() => {
     if (!currentData[currentIndex]) return null;
     const label = currentData[currentIndex].label;
     return label.includes('(') ? label.split('(')[0].trim() : label.trim();
   }, [currentData, currentIndex]);
 
-  // phaseRef 동기화
+  // phase 상태 동기화 (Stale Closure 방지)
   useEffect(() => {
     phaseRef.current = phase;
   }, [phase]);
 
-  // 문제 변경 시 초기화
+  // 문제가 바뀌면 초기화
   useEffect(() => {
     targetLabelRef.current = currentTargetLabel;
     setIsCorrect(null);
     setPredictionMsg("손을 보여주세요 👋");
+    setUiText('');
     setProgress(0);
+    sequenceBuffer.current = [];
     
+    // 카메라가 켜져 있다면 준비 단계로 진입
     if (isCamOn) setPhase('ready');
   }, [currentTargetLabel]);
 
-  // --- 🔄 턴(Turn) 기반 로직 (파이썬 코드 적극 반영) ---
+  // --- 🔄 턴(Turn) 기반 로직 (단어 연습용) ---
   useEffect(() => {
     if (!isCamOn) {
         setPhase('idle');
@@ -86,6 +91,7 @@ const Study = () => {
         return;
     }
 
+    // 단어 모드인지 확인
     const isWordMode = activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current));
     
     if (!isWordMode) {
@@ -98,45 +104,37 @@ const Study = () => {
 
     // 1. 준비 단계 (Get Ready... 1s)
     if (phase === 'ready') {
-        setUiColor('rgba(255, 215, 0, 0.8)'); // Yellow (파이썬 box_color)
+        setUiColor('rgba(255, 215, 0, 0.8)'); // Yellow (파이썬 box_color: (0, 255, 255))
         setUiText("Get Ready...");
         setPredictionMsg("준비하세요!");
         setProgress(0);
         sequenceBuffer.current = []; 
         
-        // 1초 카운트다운
-        let count = 1;
-        setTimer(count);
-        interval = setInterval(() => {
-            count -= 0.1;
-            if (count <= 0) clearInterval(interval);
-        }, 100);
-
         timeout = setTimeout(() => {
             setPhase('recording');
         }, 1000); // 1.0초
     } 
     // 2. 촬영 단계 (Recording... 3s)
     else if (phase === 'recording') {
-        setUiColor('rgba(255, 0, 0, 0.8)'); // Red (파이썬 box_color)
+        setUiColor('rgba(255, 0, 0, 0.8)'); // Red (파이썬 box_color: (0, 0, 255))
         setUiText("Recording...");
         setPredictionMsg("동작을 보여주세요!");
         
         // 3초 타이머
         timeout = setTimeout(() => {
             handleRecordingEnd(); 
-        }, 3000); // 3.0초 (seq_length=90 @ 30fps 가정)
+        }, 3000); 
     } 
     // 3. 결과 단계 (Result... 5s)
     else if (phase === 'result') {
         // 색상은 결과에 따라 handleRecordingEnd에서 설정됨 (Green/Grey)
         
-        // ✅ [수정] 파이썬 코드의 RESULT_TIME = 5.0 반영
+        // 파이썬 코드의 RESULT_TIME = 5.0 반영
         timeout = setTimeout(() => {
             if (isCorrect) {
-                 // 정답이면 대기 (사용자가 넘길 때까지)
+                 // 정답이면 사용자가 넘길 때까지 대기
             } else {
-                setPhase('ready'); // 틀리면 다시 준비
+                setPhase('ready'); // 틀리면 다시 준비 단계로
             }
         }, 5000); // 5.0초
     }
@@ -153,127 +151,38 @@ const Study = () => {
 
   // --- 촬영 종료 및 데이터 전송 ---
   const handleRecordingEnd = () => {
+    // 데이터가 없으면 에러 처리
     if (sequenceBuffer.current.length === 0) {
-        setPredictionMsg("데이터가 없습니다.");
+        setPredictionMsg("데이터가 없습니다. (인식 실패)");
         setUiText("No Data");
         setUiColor('rgba(128, 128, 128, 0.8)');
         setPhase('result');
         return;
     }
 
-    // 데이터 길이 맞추기 (90개)
+    // 데이터 길이 맞추기 (90개로 Sampling 또는 Padding)
     const rawData = sequenceBuffer.current;
     let processedData = [];
 
     if (rawData.length >= SEQ_LENGTH) {
+        // 데이터가 많으면 뒤에서부터 90개 자르기
         processedData = rawData.slice(-SEQ_LENGTH);
     } else {
+        // 데이터가 부족하면 마지막 프레임 복사해서 채우기
         processedData = [...rawData];
         const lastFrame = rawData[rawData.length - 1];
         while (processedData.length < SEQ_LENGTH) {
             processedData.push(lastFrame);
         }
     }
-console.log("훔칠 데이터:", JSON.stringify(processedData));
+
     setPredictionMsg("분석 중...");
     predictSign(processedData, 'word', targetLabelRef.current);
     
     setPhase('result');
   };
 
-  // --- MediaPipe 설정 ---
-  useEffect(() => {
-    let detector = null;
-    let camera = null;
-
-    if (isCamOn) {
-      const isWordMode = activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current));
-
-      if (isWordMode) {
-        detector = new Holistic({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`,
-        });
-        detector.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
-      } else {
-        detector = new Hands({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
-        });
-        detector.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
-      }
-
-      detector.onResults(onResults);
-
-      if (videoRef.current) {
-        camera = new Camera(videoRef.current, {
-          onFrame: async () => {
-            if (isCamOn && videoRef.current) await detector.send({ image: videoRef.current });
-          },
-          width: 640,
-          height: 480,
-        });
-        cameraRef.current = camera;
-        camera.start();
-      }
-    }
-
-    return () => {
-      if (cameraRef.current) { cameraRef.current.stop(); cameraRef.current = null; }
-      if (detector) detector.close();
-    };
-  }, [isCamOn, activeTab, currentTargetLabel]);
-
-  // --- onResults ---
-  const onResults = (results) => {
-    if (!canvasRef.current) return;
-    const ctx = canvasRef.current.getContext('2d');
-    
-    ctx.save();
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    
-    // 🌟 [거울 모드] 좌우 반전
-    ctx.translate(canvasRef.current.width, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(results.image, 0, 0, canvasRef.current.width, canvasRef.current.height);
-
-    if (isCorrect) { ctx.restore(); return; }
-
-    const isWordMode = activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current));
-
-    if (isWordMode) {
-        if (phaseRef.current === 'recording') {
-            const features = extractHolisticFeatures(results);
-            sequenceBuffer.current.push(features);
-            
-            // 진행률 업데이트 (UI용)
-            // 파이썬 로직: len(sequence) / seq_length
-            const currentLen = sequenceBuffer.current.length;
-            const pct = Math.min(100, Math.round((currentLen / SEQ_LENGTH) * 100));
-            // React 상태 업데이트는 비동기라 렌더링 사이클에 맡김 (성능 고려)
-            // 여기서는 실시간성을 위해 직접 그리지 않고 상태만 업데이트하거나 
-            // 캔버스에 직접 그리는 방식이 좋음. 아래는 상태 업데이트 방식.
-            if (currentLen % 5 === 0) setProgress(pct); 
-            
-            // 녹화 중 테두리 (Red)
-            ctx.strokeStyle = "red";
-            ctx.lineWidth = 10;
-            ctx.strokeRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        }
-    } else {
-        // 기존 Hands 모드
-        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-            const now = Date.now();
-            if (now - lastPredictionTime.current > 1000 && !isPredicting.current && targetLabelRef.current) {
-                lastPredictionTime.current = now;
-                const features = extractFeatures(toXY(results.multiHandLandmarks[0]));
-                const modelKey = /^[0-9]+$/.test(targetLabelRef.current) ? 'digit' : 'hangul';
-                predictSign(features, modelKey, targetLabelRef.current);
-            }
-        }
-    }
-    ctx.restore();
-  };
-
-  // --- 예측 요청 ---
+  // --- 예측 요청 함수 ---
   const predictSign = async (features, modelKey, expectedLabel) => {
     if (isPredicting.current) return;
     try {
@@ -299,12 +208,12 @@ console.log("훔칠 데이터:", JSON.stringify(processedData));
           setIsCorrect(true);
         } else {
           setPredictionMsg(`틀렸습니다 (인식: ${predicted})`);
-          if (predicted === 'standby') {
+          if (predicted === 'standby' || predicted === '대기') {
              setUiText("STANDBY (대기)");
              setUiColor('rgba(128, 128, 128, 0.8)'); // Grey
           } else {
              setUiText(`${predicted.toUpperCase()} !!`);
-             setUiColor('rgba(255, 0, 0, 0.8)'); // Red (오답 표시용, 파이썬엔 없지만 추가)
+             setUiColor('rgba(255, 0, 0, 0.8)'); // Red (오답 표시)
           }
           setIsCorrect(false);
         }
@@ -312,11 +221,121 @@ console.log("훔칠 데이터:", JSON.stringify(processedData));
     } catch (error) {
       console.error(error);
       setPredictionMsg("서버 연결 실패");
+      setUiText("ERROR");
+      setUiColor('rgba(128, 128, 128, 0.8)');
     } finally {
       isPredicting.current = false;
     }
   };
 
+  // --- MediaPipe 설정 ---
+  useEffect(() => {
+    let detector = null;
+    let camera = null;
+
+    if (isCamOn) {
+      // 현재 모드 확인
+      const isWordMode = activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current));
+
+      if (isWordMode) {
+        // [Holistic] 단어 연습용
+        console.log("Loading Holistic Model...");
+        detector = new Holistic({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`,
+        });
+        detector.setOptions({
+          modelComplexity: 1,
+          smoothLandmarks: true,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        });
+      } else {
+        // [Hands] 기존 연습용
+        console.log("Loading Hands Model...");
+        detector = new Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+        });
+        detector.setOptions({
+          maxNumHands: 1,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        });
+      }
+
+      detector.onResults(onResults);
+
+      if (videoRef.current) {
+        camera = new Camera(videoRef.current, {
+          onFrame: async () => {
+            if (isCamOn && videoRef.current) {
+              await detector.send({ image: videoRef.current });
+            }
+          },
+          width: 640,
+          height: 480,
+        });
+        cameraRef.current = camera;
+        camera.start();
+      }
+    }
+
+    return () => {
+      if (cameraRef.current) { cameraRef.current.stop(); cameraRef.current = null; }
+      if (detector) detector.close();
+    };
+  }, [isCamOn, activeTab, currentTargetLabel]);
+
+  // --- onResults (화면 그리기 및 데이터 수집) ---
+  const onResults = (results) => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    
+    ctx.save();
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    
+    // 🌟 캔버스 좌우 반전 (거울 모드)
+    ctx.translate(canvasRef.current.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(results.image, 0, 0, canvasRef.current.width, canvasRef.current.height);
+
+    if (isCorrect) { ctx.restore(); return; }
+
+    const isWordMode = activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current));
+
+    if (isWordMode) {
+        // 🟢 [단어 모드] recording 상태일 때만 데이터 수집
+        if (phaseRef.current === 'recording') {
+            const features = extractHolisticFeatures(results);
+            sequenceBuffer.current.push(features);
+            
+            // 진행률 업데이트 (UI 표시용)
+            const currentLen = sequenceBuffer.current.length;
+            const pct = Math.min(100, Math.floor((currentLen / SEQ_LENGTH) * 100));
+            // 성능을 위해 5프레임마다 상태 업데이트
+            if (currentLen % 5 === 0) setProgress(pct); 
+
+            // 녹화 중일 때 빨간 테두리
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = 10;
+            ctx.strokeRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        }
+    } else {
+        // 🔵 [기존 모드] 실시간 인식
+        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+            const now = Date.now();
+            if (now - lastPredictionTime.current > 1000 && !isPredicting.current && targetLabelRef.current) {
+                lastPredictionTime.current = now;
+                const features = extractFeatures(toXY(results.multiHandLandmarks[0]));
+                const modelKey = /^[0-9]+$/.test(targetLabelRef.current) ? 'digit' : 'hangul';
+                predictSign(features, modelKey, targetLabelRef.current);
+            }
+        }
+    }
+    ctx.restore();
+  };
+
+  // --- 핸들러 ---
   const handleTabChange = (tab) => { setActiveTab(tab); setCurrentIndex(0); setPhase('idle'); };
   const handlePrev = () => { setCurrentIndex(prev => prev === 0 ? currentData.length - 1 : prev - 1); setPhase('ready'); };
   const handleNext = () => { setCurrentIndex(prev => prev === currentData.length - 1 ? 0 : prev + 1); setPhase('ready'); };
@@ -337,22 +356,26 @@ console.log("훔칠 데이터:", JSON.stringify(processedData));
 
       <div className="study-content-wrapper">
         <button className="nav-btn prev" onClick={handlePrev}>◀</button>
+        
         <div className="display-area">
+          {/* 문제 이미지 카드 */}
           <div className="study-card">
              <div className="card-img-wrapper">
                 {currentData[currentIndex] && <img src={currentData[currentIndex].img} alt="문제" />}
              </div>
              <div className="card-text">{currentData[currentIndex]?.label}</div>
           </div>
+
+          {/* 웹캠 및 결과 카드 */}
           <div className="study-card webcam-card">
             <div className="card-img-wrapper" style={{ position: 'relative' }}>
                <video ref={videoRef} style={{display:'none'}}></video>
                <canvas ref={canvasRef} className="output_canvas" width={640} height={480}></canvas>
                
-               {/* 🎨 파이썬 스타일 UI 오버레이 */}
-               {isCamOn && (activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current))) && phase !== 'idle' && (
+               {/* 🎨 UI 오버레이 (단어 모드 + 카메라 켜짐 + idle 아닐 때) */}
+               {isCamOn && phase !== 'idle' && (activeTab === 'words' || (activeTab === 'all' && words.some(w => w.label === targetLabelRef.current))) && (
                  <>
-                   {/* 상단 박스 */}
+                   {/* 상단 상태 바 */}
                    <div style={{
                       position: 'absolute', top: 0, left: 0, width: '100%', height: '60px',
                       backgroundColor: uiColor, display: 'flex', alignItems: 'center', paddingLeft: '20px',
@@ -363,7 +386,7 @@ console.log("훔칠 데이터:", JSON.stringify(processedData));
                       </span>
                    </div>
 
-                   {/* 진행률 바 (녹화 중일 때) */}
+                   {/* 진행률 바 (녹화 중일 때만) */}
                    {phase === 'recording' && (
                      <div style={{
                        position: 'absolute', top: '55px', left: 0, height: '5px',

@@ -96,26 +96,37 @@ export function extractFeatures(coords) {
 // ... (기존 extractFeatures 등 위쪽 코드 유지) ...
 
 export function extractHolisticFeatures(results) {
+  // 안전장치: 값이 없으면 0으로 채움 (AI:Error 방지)
+  const getVal = (val) => (val === undefined || val === null || isNaN(val)) ? 0 : val;
+
   // 1. Pose 처리 (33개 * 4값 = 132개)
-  // Python 학습 시 cv2.flip을 썼다면 x좌표가 반전되어 있음. 이를 웹에서도 똑같이 1-x 처리해야 함.
+  // Python: cv2.flip -> X좌표 반전됨
   const pose = results.poseLandmarks 
     ? results.poseLandmarks.flatMap(p => [
-        1 - p.x, // 🌟 X좌표 반전 (Mirroring)
-        p.y, 
-        p.z, 
-        p.visibility || 0 // 안전장치: visibility가 없으면 0
+        1 - getVal(p.x), // X 반전
+        getVal(p.y), 
+        getVal(p.z), 
+        getVal(p.visibility)
       ])
-    : new Array(33 * 4).fill(0);
-  
-  const lh = results.leftHandLandmarks
-    ? results.leftHandLandmarks.flatMap(p => [1 - p.x, p.y, p.z])
-    : new Array(21 * 3).fill(0);
+    : new Array(132).fill(0);
 
-  const rh = results.rightHandLandmarks
-    ? results.rightHandLandmarks.flatMap(p => [1 - p.x, p.y, p.z])
-    : new Array(21 * 3).fill(0);
+  // 2. 손 데이터 처리 (각 21개 * 3값 = 63개)
+  // 🚨 [핵심] Python에서 cv2.flip을 하면 '물리적 오른손'이 '왼쪽'에 그려지면서
+  // MediaPipe가 이를 '왼손(Left Hand)'으로 인식해버립니다.
+  // 따라서 웹(원본)의 'Right Hand' 데이터를 Python의 'lh' 자리에 넣어야 짝이 맞습니다.
 
-  // 3. 순서 조합: Python 코드(1_collect_data.py)의 np.concatenate 순서와 100% 일치해야 함
-  // 보통: [Pose, Left_Hand, Right_Hand] 순서입니다.
-return [...pose, ...lh, ...rh];
+  // 웹의 '왼손' 데이터 (X 반전)
+  const lh_web = results.leftHandLandmarks
+    ? results.leftHandLandmarks.flatMap(p => [1 - getVal(p.x), getVal(p.y), getVal(p.z)])
+    : new Array(63).fill(0);
+
+  // 웹의 '오른손' 데이터 (X 반전)
+  const rh_web = results.rightHandLandmarks
+    ? results.rightHandLandmarks.flatMap(p => [1 - getVal(p.x), getVal(p.y), getVal(p.z)])
+    : new Array(63).fill(0);
+
+  // 3. 데이터 합치기
+  // Python 순서: [pose, lh, rh]
+  // 하지만 내용물은: [pose, 웹_오른손, 웹_왼손] 순서로 넣어야 함! (Swap)
+  return [...pose, ...rh_web, ...lh_web];
 }
