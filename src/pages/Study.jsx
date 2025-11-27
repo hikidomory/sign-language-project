@@ -9,7 +9,7 @@ import { toXY, extractFeatures, extractHolisticFeatures } from '../utils/handUti
 import './Study.css';
 
 // 🟢 배포된 ngrok 주소 확인 필수!
-const API_URL = "http://localhost:8000/predict"; 
+const API_URL = "https://b13eee562a16.ngrok-free.app/predict"; 
 
 const Study = () => {
   // --- 상태 관리 ---

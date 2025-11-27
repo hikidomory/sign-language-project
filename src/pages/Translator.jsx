@@ -5,7 +5,7 @@ import { toXY, extractFeatures } from '../utils/handUtils';
 import * as HE from '../utils/HangulEngine';
 import './Translator.css';
 
-const API_URL = "https://itzel-unaching-unexceptionally.ngrok-free.dev/predict";
+const API_URL = "https://b13eee562a16.ngrok-free.app/predict";
 
 const Translator = () => {
   const [activeTab, setActiveTab] = useState('text2sign'); 
